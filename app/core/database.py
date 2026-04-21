@@ -11,8 +11,14 @@ is_serverless = bool(os.environ.get('VERCEL') or os.environ.get('AWS_LAMBDA_FUNC
 # asyncpg 不支持 URL 里的 ssl=require，需通过 connect_args 传入 SSLContext
 # 检测原始 DATABASE_URL 是否要求 SSL
 _raw_db_url = settings.DATABASE_URL or ""
-_needs_ssl = any(x in _raw_db_url for x in ("sslmode=require", "ssl=require", "neon.tech", "supabase.co"))
-_connect_args = {"ssl": ssl.create_default_context()} if _needs_ssl else {}
+_needs_ssl  = any(x in _raw_db_url for x in ("sslmode=require", "ssl=require", "neon.tech", "supabase.co"))
+_is_pooler  = "-pooler." in _raw_db_url  # Neon PgBouncer pooler，需禁用 statement cache
+
+_connect_args: dict = {}
+if _needs_ssl:
+    _connect_args["ssl"] = ssl.create_default_context()
+if _is_pooler:
+    _connect_args["statement_cache_size"] = 0  # PgBouncer transaction mode 不支持 prepared statements
 
 if is_serverless:
     engine = create_async_engine(
