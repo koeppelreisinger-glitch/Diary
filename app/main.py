@@ -92,6 +92,9 @@ def create_app() -> FastAPI:
         from sqlalchemy import text
         from app.core.database import engine, _raw_db_url, _needs_ssl, _is_pooler
         raw_env = os.environ.get("DATABASE_URL", "NOT_SET")
+        # 列出所有环境变量的 key，找到 DATABASE_URL 或相似变量
+        all_keys = sorted(os.environ.keys())
+        db_related = [k for k in all_keys if "DB" in k.upper() or "DATABASE" in k.upper() or "POSTGRES" in k.upper() or "PG" in k.upper()]
         try:
             async with engine.connect() as conn:
                 result = await conn.execute(text("SELECT 1"))
@@ -99,24 +102,26 @@ def create_app() -> FastAPI:
             return {
                 "status": "ok",
                 "db_ping": row,
-                "db_host": _raw_db_url.split("@")[-1].split("/")[0] if "@" in _raw_db_url else "?",
                 "ssl": _needs_ssl,
                 "pooler": _is_pooler,
                 "env_db_url_set": raw_env != "NOT_SET",
-                "env_db_url_preview": raw_env[:50] if raw_env != "NOT_SET" else "NOT_SET",
+                "db_related_keys": db_related,
+                "all_env_keys_count": len(all_keys),
             }
         except Exception as e:
             return JSONResponse(status_code=200, content={
                 "status": "error",
                 "error_type": type(e).__name__,
-                "error_msg": str(e)[:500],
-                "traceback": traceback.format_exc()[-800:],
+                "error_msg": str(e)[:400],
                 "ssl": _needs_ssl,
                 "pooler": _is_pooler,
                 "raw_url_host": _raw_db_url.split("@")[-1].split("/")[0] if "@" in _raw_db_url else "?",
                 "env_db_url_set": raw_env != "NOT_SET",
-                "env_db_url_preview": raw_env[:50] if raw_env != "NOT_SET" else "NOT_SET",
+                "env_db_url_preview": raw_env[:60] if raw_env != "NOT_SET" else "NOT_SET",
+                "db_related_keys": db_related,
+                "all_env_keys": all_keys,
             })
+
 
 
     return app
