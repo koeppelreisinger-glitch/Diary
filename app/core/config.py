@@ -115,16 +115,13 @@ class Settings(BaseSettings):
             elif url.startswith("postgresql://") and "+asyncpg" not in url:
                 url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
-            # 解析 query string，转换 asyncpg 不支持的参数
+            # 去掉 asyncpg 不能识别的 query 参数
+            # SSL 改由 database.py 的 connect_args={"ssl": ssl_context} 处理
             parsed = urlparse(url)
             params = parse_qs(parsed.query, keep_blank_values=False)
-            # asyncpg 用 ssl=require，不认识 sslmode / channel_binding
-            if "sslmode" in params:
-                ssl_val = params.pop("sslmode")[0]  # e.g. "require"
-                # 只有 require / verify-ca / verify-full 才开启 SSL
-                if ssl_val in ("require", "verify-ca", "verify-full"):
-                    params.setdefault("ssl", ["require"])
-            params.pop("channel_binding", None)  # asyncpg 不支持
+            params.pop("sslmode", None)
+            params.pop("ssl", None)
+            params.pop("channel_binding", None)
 
             new_query = urlencode({k: v[0] for k, v in params.items()})
             url = urlunparse(parsed._replace(query=new_query))
@@ -134,6 +131,7 @@ class Settings(BaseSettings):
             f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
+
 
     model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", extra="ignore")
 
