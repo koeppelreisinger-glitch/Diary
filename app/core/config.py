@@ -105,9 +105,12 @@ class Settings(BaseSettings):
 
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
-        if self.DATABASE_URL:
-            from urllib.parse import urlparse, urlencode, parse_qs, urlunparse
-            url = self.DATABASE_URL.strip()
+        import os
+        from urllib.parse import urlparse, urlencode, parse_qs, urlunparse
+        # pydantic-settings 在某些 PaaS 上读不到 env，直接用 os.environ 保底
+        raw = self.DATABASE_URL or os.environ.get("DATABASE_URL")
+        if raw:
+            url = raw.strip()
 
             # 统一驱动前缀为 asyncpg
             if url.startswith("postgres://"):

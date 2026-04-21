@@ -88,9 +88,10 @@ def create_app() -> FastAPI:
     @app.get("/debug/db-test")
     async def _debug_db_test():
         """临时端点，排查数据库连接问题后删除"""
-        import traceback
+        import traceback, os
         from sqlalchemy import text
         from app.core.database import engine, _raw_db_url, _needs_ssl, _is_pooler
+        raw_env = os.environ.get("DATABASE_URL", "NOT_SET")
         try:
             async with engine.connect() as conn:
                 result = await conn.execute(text("SELECT 1"))
@@ -101,7 +102,8 @@ def create_app() -> FastAPI:
                 "db_host": _raw_db_url.split("@")[-1].split("/")[0] if "@" in _raw_db_url else "?",
                 "ssl": _needs_ssl,
                 "pooler": _is_pooler,
-                "uri_preview": settings.SQLALCHEMY_DATABASE_URI[:80],
+                "env_db_url_set": raw_env != "NOT_SET",
+                "env_db_url_preview": raw_env[:50] if raw_env != "NOT_SET" else "NOT_SET",
             }
         except Exception as e:
             return JSONResponse(status_code=200, content={
@@ -112,7 +114,10 @@ def create_app() -> FastAPI:
                 "ssl": _needs_ssl,
                 "pooler": _is_pooler,
                 "raw_url_host": _raw_db_url.split("@")[-1].split("/")[0] if "@" in _raw_db_url else "?",
+                "env_db_url_set": raw_env != "NOT_SET",
+                "env_db_url_preview": raw_env[:50] if raw_env != "NOT_SET" else "NOT_SET",
             })
+
 
     return app
 

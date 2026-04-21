@@ -9,8 +9,8 @@ from app.core.config import settings
 is_serverless = bool(os.environ.get('VERCEL') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME'))
 
 # asyncpg 不支持 URL 里的 ssl=require，需通过 connect_args 传入 SSLContext
-# 检测原始 DATABASE_URL 是否要求 SSL
-_raw_db_url = settings.DATABASE_URL or ""
+# 优先用 pydantic settings，如果它返回 None 则直接读 os.environ（小数 PaaS 平台 pydantic-settings 读不到 env）
+_raw_db_url = settings.DATABASE_URL or os.environ.get("DATABASE_URL", "")
 _needs_ssl  = any(x in _raw_db_url for x in ("sslmode=require", "ssl=require", "neon.tech", "supabase.co"))
 _is_pooler  = "-pooler." in _raw_db_url  # Neon PgBouncer pooler，需禁用 statement cache
 
