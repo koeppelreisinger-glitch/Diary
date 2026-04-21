@@ -541,6 +541,7 @@ textarea {
 }
 
 @media (max-width: 760px) {
+
   .console-header,
   .console-shell {
     padding-left: 16px;

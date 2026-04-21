@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -9,159 +10,160 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body class="mobile-page">
-<div class="mobile-stage">
+    <div class="mobile-stage">
 
-    <!-- 顶栏 -->
-    <header class="app-header">
-        <div class="app-header-logo">Echo</div>
-        <div class="app-header-actions">
-            <button class="btn btn-ghost btn-sm" id="refreshBtn" onclick="refreshAll()" style="font-size:18px;padding:4px 8px">↺</button>
-            <button class="btn btn-ghost btn-sm" onclick="logout()">退出</button>
-        </div>
-    </header>
-
-    <div class="has-bottom-nav" style="overflow-y:auto">
-
-        <!-- 问候区 -->
-        <div class="greeting-header">
-            <div class="greeting-text">
-                <div class="greeting-sub" id="todayDateLabel">Memories</div>
-                <div class="greeting-name" id="memGreeting">今日回顾</div>
+        <!-- 顶栏 -->
+        <header class="app-header">
+            <div class="app-header-logo">Echo</div>
+            <div class="app-header-actions">
+                <button class="btn btn-ghost btn-sm" id="refreshBtn" onclick="refreshAll()"
+                    style="font-size:18px;padding:4px 8px">↺</button>
+                <button class="btn btn-ghost btn-sm" onclick="logout()">退出</button>
             </div>
-            <div class="greeting-avatar" onclick="location.href='today.html'" id="memAvatar">✍️</div>
-        </div>
+        </header>
 
-        <!-- ═══ 今日总结区 ═══ -->
-        <div class="section-row" style="padding-top:12px;padding-bottom:0">
-            <div class="section-row-title">今日总结</div>
-            <span class="section-row-action" onclick="location.href='today.html'">去记录 →</span>
-        </div>
+        <div class="has-bottom-nav" style="overflow-y:auto">
 
-        <div style="padding:0 16px">
-            <div class="card card-accent" id="todayCard">
-                <div class="status-box" style="padding:24px 0">
-                    <div class="loading-spinner"></div>
-                    <div class="text" style="margin-top:10px;font-size:13px">加载中...</div>
+            <!-- 问候区 -->
+            <div class="greeting-header">
+                <div class="greeting-text">
+                    <div class="greeting-sub" id="todayDateLabel">Memories</div>
+                    <div class="greeting-name" id="memGreeting">今日回顾</div>
                 </div>
+                <div class="greeting-avatar" onclick="location.href='today.html'" id="memAvatar">✍️</div>
             </div>
 
-        </div>
+            <!-- ═══ 今日总结区 ═══ -->
+            <div class="section-row" style="padding-top:12px;padding-bottom:0">
+                <div class="section-row-title">今日总结</div>
+                <span class="section-row-action" onclick="location.href='today.html'">去记录 →</span>
+            </div>
 
-        <!-- ═══ 历史记录 ═══ -->
-        <div class="section-row" style="padding-top:4px">
-            <div class="section-row-title">历史记录</div>
-        </div>
+            <div style="padding:0 16px">
+                <div class="card card-accent" id="todayCard">
+                    <div class="status-box" style="padding:24px 0">
+                        <div class="loading-spinner"></div>
+                        <div class="text" style="margin-top:10px;font-size:13px">加载中...</div>
+                    </div>
+                </div>
 
-        <div style="padding:0 16px">
+            </div>
 
-            <!-- 日期筛选 -->
-            <div class="filter-bar" style="margin-bottom:10px;gap:8px">
-                <input type="date" id="filterStartDate"
-                    style="flex:1;min-width:0;border-radius:10px;padding:7px 10px;
+            <!-- ═══ 历史记录 ═══ -->
+            <div class="section-row" style="padding-top:4px">
+                <div class="section-row-title">历史记录</div>
+            </div>
+
+            <div style="padding:0 16px">
+
+                <!-- 日期筛选 -->
+                <div class="filter-bar" style="margin-bottom:10px;gap:8px">
+                    <input type="date" id="filterStartDate" style="flex:1;min-width:0;border-radius:10px;padding:7px 10px;
                            border:1px solid var(--border);font-size:13px;font-family:var(--font-family)">
-                <span style="color:var(--text-muted);font-size:12px">至</span>
-                <input type="date" id="filterEndDate"
-                    style="flex:1;min-width:0;border-radius:10px;padding:7px 10px;
+                    <span style="color:var(--text-muted);font-size:12px">至</span>
+                    <input type="date" id="filterEndDate" style="flex:1;min-width:0;border-radius:10px;padding:7px 10px;
                            border:1px solid var(--border);font-size:13px;font-family:var(--font-family)">
-                <button class="btn btn-primary btn-sm" onclick="onDateFilterChange()"
-                    style="border-radius:10px;white-space:nowrap">查询</button>
-                <button class="btn btn-ghost btn-sm" onclick="clearDateFilter()"
-                    style="border-radius:10px">清除</button>
-            </div>
-
-            <!-- Tab 栏 -->
-            <div class="tab-bar" id="tabBar">
-                <div class="tab-item active" data-tab="events"    onclick="switchTab('events')">📋 事件</div>
-                <div class="tab-item"        data-tab="emotions"  onclick="switchTab('emotions')">😊 情绪</div>
-                <div class="tab-item"        data-tab="expenses"  onclick="switchTab('expenses')">💰 消费</div>
-                <div class="tab-item"        data-tab="locations" onclick="switchTab('locations')">📍 地点</div>
-                <div class="tab-item"        data-tab="tags"      onclick="switchTab('tags')">🏷️</div>
-            </div>
-
-            <!-- 局部筛选面板 -->
-            <div class="tab-filter" id="tabFilter-emotions">
-                <div class="tab-filter-inner">
-                    <label>情绪:</label>
-                    <input type="text" id="f-emotion_label" placeholder="如：开心">
-                    <button class="btn btn-primary btn-sm" onclick="applyTabFilter('emotions')">筛选</button>
-                    <button class="btn btn-ghost btn-sm" onclick="clearTabFilter('emotions')">清除</button>
+                    <button class="btn btn-primary btn-sm" onclick="onDateFilterChange()"
+                        style="border-radius:10px;white-space:nowrap">查询</button>
+                    <button class="btn btn-ghost btn-sm" onclick="clearDateFilter()"
+                        style="border-radius:10px">清除</button>
                 </div>
-            </div>
-            <div class="tab-filter" id="tabFilter-locations">
-                <div class="tab-filter-inner">
-                    <label>地点:</label>
-                    <input type="text" id="f-name" placeholder="模糊搜索">
-                    <button class="btn btn-primary btn-sm" onclick="applyTabFilter('locations')">筛选</button>
-                    <button class="btn btn-ghost btn-sm" onclick="clearTabFilter('locations')">清除</button>
-                </div>
-            </div>
-            <div class="tab-filter" id="tabFilter-expenses">
-                <div class="tab-filter-inner">
-                    <label>分类:</label>
-                    <input type="text" id="f-category" placeholder="如：餐饮">
-                    <label>金额:</label>
-                    <input type="number" id="f-min_amount" min="0" step="0.01" placeholder="最小">
-                    <span>—</span>
-                    <input type="number" id="f-max_amount" min="0" step="0.01" placeholder="最大">
-                    <button class="btn btn-primary btn-sm" onclick="applyTabFilter('expenses')">筛选</button>
-                    <button class="btn btn-ghost btn-sm" onclick="clearTabFilter('expenses')">清除</button>
-                </div>
-            </div>
 
-            <!-- 表格区 -->
-            <div id="tableArea">
-                <div class="status-box" style="padding:28px 0">
-                    <div class="loading-spinner"></div>
-                    <div class="text" style="margin-top:10px;font-size:13px">加载中...</div>
+                <!-- Tab 栏 -->
+                <div class="tab-bar" id="tabBar">
+                    <div class="tab-item active" data-tab="events" onclick="switchTab('events')">📋 事件</div>
+                    <div class="tab-item" data-tab="emotions" onclick="switchTab('emotions')">😊 情绪</div>
+                    <div class="tab-item" data-tab="expenses" onclick="switchTab('expenses')">💰 消费</div>
+                    <div class="tab-item" data-tab="locations" onclick="switchTab('locations')">📍 地点</div>
+                    <div class="tab-item" data-tab="tags" onclick="switchTab('tags')">🏷️</div>
                 </div>
-            </div>
 
+                <!-- 局部筛选面板 -->
+                <div class="tab-filter" id="tabFilter-emotions">
+                    <div class="tab-filter-inner">
+                        <label>情绪:</label>
+                        <input type="text" id="f-emotion_label" placeholder="如：开心">
+                        <button class="btn btn-primary btn-sm" onclick="applyTabFilter('emotions')">筛选</button>
+                        <button class="btn btn-ghost btn-sm" onclick="clearTabFilter('emotions')">清除</button>
+                    </div>
+                </div>
+                <div class="tab-filter" id="tabFilter-locations">
+                    <div class="tab-filter-inner">
+                        <label>地点:</label>
+                        <input type="text" id="f-name" placeholder="模糊搜索">
+                        <button class="btn btn-primary btn-sm" onclick="applyTabFilter('locations')">筛选</button>
+                        <button class="btn btn-ghost btn-sm" onclick="clearTabFilter('locations')">清除</button>
+                    </div>
+                </div>
+                <div class="tab-filter" id="tabFilter-expenses">
+                    <div class="tab-filter-inner">
+                        <label>分类:</label>
+                        <input type="text" id="f-category" placeholder="如：餐饮">
+                        <label>金额:</label>
+                        <input type="number" id="f-min_amount" min="0" step="0.01" placeholder="最小">
+                        <span>—</span>
+                        <input type="number" id="f-max_amount" min="0" step="0.01" placeholder="最大">
+                        <button class="btn btn-primary btn-sm" onclick="applyTabFilter('expenses')">筛选</button>
+                        <button class="btn btn-ghost btn-sm" onclick="clearTabFilter('expenses')">清除</button>
+                    </div>
+                </div>
+
+                <!-- 表格区 -->
+                <div id="tableArea">
+                    <div class="status-box" style="padding:28px 0">
+                        <div class="loading-spinner"></div>
+                        <div class="text" style="margin-top:10px;font-size:13px">加载中...</div>
+                    </div>
+                </div>
+
+            </div>
         </div>
+
+        <!-- 底部导航 -->
+        <nav class="app-bottom-nav">
+            <a class="app-nav-item" href="today.html">
+                <span class="app-nav-icon">✍️</span>
+                <span class="app-nav-label">今日</span>
+            </a>
+            <a class="app-nav-item active" href="index.html">
+                <span class="app-nav-icon">📖</span>
+                <span class="app-nav-label">回忆</span>
+            </a>
+            <a class="app-nav-item" href="hope.html">
+                <span class="app-nav-icon">🌱</span>
+                <span class="app-nav-label">希冀</span>
+            </a>
+            <a class="app-nav-item" href="profile.html">
+                <span class="app-nav-icon">👤</span>
+                <span class="app-nav-label">我</span>
+            </a>
+        </nav>
+
     </div>
 
-    <!-- 底部导航 -->
-    <nav class="app-bottom-nav">
-        <a class="app-nav-item" href="today.html">
-            <span class="app-nav-icon">✍️</span>
-            <span class="app-nav-label">今日</span>
-        </a>
-        <a class="app-nav-item active" href="index.html">
-            <span class="app-nav-icon">📖</span>
-            <span class="app-nav-label">回忆</span>
-        </a>
-        <a class="app-nav-item" href="hope.html">
-            <span class="app-nav-icon">🌱</span>
-            <span class="app-nav-label">希冀</span>
-        </a>
-        <a class="app-nav-item" href="profile.html">
-            <span class="app-nav-icon">👤</span>
-            <span class="app-nav-label">我</span>
-        </a>
-    </nav>
+    <script src="js/api.js"></script>
+    <script src="js/records.js"></script>
+    <script>
+        if (!requireAuth()) { /* 跳登录 */ }
+        else {
+            init();
+            initDateLabel();
+            loadGreeting();
+        }
 
-</div>
-
-<script src="js/api.js"></script>
-<script src="js/records.js"></script>
-<script>
-if (!requireAuth()) { /* 跳登录 */ }
-else {
-    init();
-    initDateLabel();
-    loadGreeting();
-}
-
-async function loadGreeting() {
-    try {
-        const user = await apiFetch('/users/me');
-        const nickname = user.nickname || user.phone || '';
-        const el = document.getElementById('memGreeting');
-        if (el && nickname) el.textContent = nickname + ' 的回忆';
-        const av = document.getElementById('memAvatar');
-        if (av && nickname) av.textContent = nickname.charAt(0);
-    } catch (e) { /* 静默失败 */ }
-}
-</script>
+        async function loadGreeting() {
+            try {
+                const user = await apiFetch('/users/me');
+                const nickname = user.nickname || user.phone || '';
+                const el = document.getElementById('memGreeting');
+                if (el && nickname) el.textContent = nickname + ' 的回忆';
+                const av = document.getElementById('memAvatar');
+                if (av && nickname) av.textContent = nickname.charAt(0);
+            } catch (e) { /* 静默失败 */ }
+        }
+    </script>
 </body>
+
 </html>
