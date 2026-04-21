@@ -272,18 +272,35 @@ async function runAction(title, action, { successMessage } = {}) {
 
 async function registerUser() {
     await runAction('注册账号', async () => {
-        const payload = await requestApi('/auth/register', {
+        const phone    = valueOf('authPhone');
+        const password = valueOf('authPassword');
+
+        // 1. 注册
+        const regPayload = await requestApi('/auth/register', {
             method: 'POST',
             auth: false,
             body: {
-                phone: valueOf('authPhone'),
-                password: valueOf('authPassword'),
+                phone,
+                password,
                 nickname: valueOf('authNickname') || null,
             },
         });
-        applyUserContext(payload.data);
-        return payload;
-    }, { successMessage: `手机号 ${valueOf('authPhone')} 注册成功` });
+        applyUserContext(regPayload.data);
+
+        // 2. 注册成功后自动登录，避免用户二次手动点击
+        const loginPayload = await requestApi('/auth/login', {
+            method: 'POST',
+            auth: false,
+            body: { phone, password },
+        });
+        setToken(loginPayload.data.access_token);
+        syncContextView();
+
+        // 3. 静默拉取完整用户信息（失败不影响整体流程）
+        try { await getCurrentUserProfile(true); } catch (_) {}
+
+        return regPayload;
+    }, { successMessage: `手机号 ${valueOf('authPhone')} 注册并自动登录成功` });
 }
 
 async function loginUser() {
@@ -298,7 +315,8 @@ async function loginUser() {
         });
         setToken(payload.data.access_token);
         syncContextView();
-        await getCurrentUserProfile(true);
+        // 静默拉取用户信息：失败不应让已成功写入的 token 回滚成「登录失败」
+        try { await getCurrentUserProfile(true); } catch (_) {}
         return payload;
     }, { successMessage: '登录成功，Token 已写入 localStorage' });
 }
