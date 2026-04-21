@@ -84,6 +84,36 @@ def create_app() -> FastAPI:
                 "请在 Vercel Dashboard > Settings > Environment Variables 中设置 DATABASE_URL。"
             )
 
+    # ── 临时诊断端点：返回数据库连接的真实错误信息 ──────────────────
+    @app.get("/debug/db-test")
+    async def _debug_db_test():
+        """临时端点，排查数据库连接问题后删除"""
+        import traceback
+        from sqlalchemy import text
+        from app.core.database import engine, _raw_db_url, _needs_ssl, _is_pooler
+        try:
+            async with engine.connect() as conn:
+                result = await conn.execute(text("SELECT 1"))
+                row = result.scalar()
+            return {
+                "status": "ok",
+                "db_ping": row,
+                "db_host": _raw_db_url.split("@")[-1].split("/")[0] if "@" in _raw_db_url else "?",
+                "ssl": _needs_ssl,
+                "pooler": _is_pooler,
+                "uri_preview": settings.SQLALCHEMY_DATABASE_URI[:80],
+            }
+        except Exception as e:
+            return JSONResponse(status_code=200, content={
+                "status": "error",
+                "error_type": type(e).__name__,
+                "error_msg": str(e)[:500],
+                "traceback": traceback.format_exc()[-800:],
+                "ssl": _needs_ssl,
+                "pooler": _is_pooler,
+                "raw_url_host": _raw_db_url.split("@")[-1].split("/")[0] if "@" in _raw_db_url else "?",
+            })
+
     return app
 
 app = create_app()
