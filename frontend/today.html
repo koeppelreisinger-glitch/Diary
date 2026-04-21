@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>今日 — Echo</title>
+    <meta name="description" content="Echo 今日记录">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* ══ 底部弹层 ══ */
+        .diary-sheet-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.45); z-index: 800;
+        }
+        .diary-sheet {
+            display: none;
+            position: fixed; bottom: 0; left: 50%;
+            transform: translateX(-50%);
+            width: min(100vw, 430px);
+            background: #FAFAF7;
+            border-radius: 28px 28px 0 0;
+            z-index: 801;
+            box-shadow: 0 -8px 40px rgba(0,0,0,0.18);
+            max-height: 90vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: max(28px, env(safe-area-inset-bottom));
+        }
+        .diary-sheet.open {
+            display: block;
+            animation: sheetSlideUp 0.3s cubic-bezier(0.32,0.72,0,1);
+        }
+        @keyframes sheetSlideUp {
+            from { transform: translateX(-50%) translateY(100%); }
+            to   { transform: translateX(-50%) translateY(0); }
+        }
+        .sheet-handle {
+            width: 42px; height: 5px;
+            background: #E0DDD8; border-radius: 999px;
+            margin: 14px auto 4px;
+        }
+        .sheet-close-floating {
+            position: sticky; top: 0;
+            display: flex; justify-content: flex-end;
+            padding: 0 16px 6px;
+            background: linear-gradient(to bottom, #FAFAF7 70%, transparent);
+            z-index: 1;
+        }
+        .sheet-close-btn {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: rgba(0,0,0,0.07); border: none; cursor: pointer;
+            font-size: 13px; color: var(--text-muted);
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* ══ 编辑面板 ══ */
+        .ep {
+            margin: 6px 16px 0;
+            background: #fff;
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            border: 1px solid var(--border);
+        }
+        .ep-title { font-size: 14px; font-weight: 800; color: var(--text-primary); }
+        .ep-hint  { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
+        .ep-textarea {
+            width: 100%; box-sizing: border-box;
+            padding: 12px; border: 1px solid var(--border);
+            border-radius: var(--radius); font-size: 14px;
+            font-family: var(--font-family); color: var(--text-primary);
+            line-height: 1.75; resize: vertical; min-height: 130px; outline: none;
+        }
+        .ep-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(245,166,35,0.12); }
+        .ep-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        .ep-status  { font-size: 12px; margin-top: 6px; }
+        .ep-status.ok  { color: var(--success); }
+        .ep-status.err { color: #e74c3c; }
+
+        /* ══ 补充对话面板 ══ */
+        .sp {
+            margin: 14px 16px 0;
+            background: linear-gradient(135deg,#f8f6ff,#fef9f0);
+            border-radius: var(--radius-lg);
+            padding: 16px; border: 1px solid #e8e0f5;
+        }
+        .sp-title { font-size: 14px; font-weight: 800; color: #7B6EC6; margin-bottom: 10px; }
+        .sp-msgs {
+            max-height: 160px; overflow-y: auto;
+            display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;
+        }
+        .sp-msg { display: flex; gap: 8px; align-items: flex-start; }
+        .sp-msg-ico { font-size: 16px; flex-shrink: 0; margin-top: 2px; }
+        .sp-msg-bubble {
+            background: #fff; border-radius: 12px; padding: 8px 12px;
+            font-size: 13px; line-height: 1.6; color: var(--text-primary);
+            border: 1px solid var(--border); flex: 1; word-break: break-word;
+        }
+        .sp-msg.user .sp-msg-bubble { background: var(--accent-light); border-color: rgba(245,166,35,0.3); }
+        .sp-input-row { display: flex; gap: 8px; }
+        .sp-input {
+            flex: 1; padding: 9px 12px;
+            border: 1px solid var(--border); border-radius: var(--radius);
+            font-size: 13px; font-family: var(--font-family); outline: none;
+        }
+        .sp-input:focus { border-color: #9D8FE0; }
+        .sp-input:disabled { background: var(--bg-secondary); }
+        .sp-save-row { margin-top: 10px; display: none; }
+        .sp-status { font-size: 12px; margin-top: 6px; }
+        .sp-status.ok  { color: var(--success); }
+        .sp-status.err { color: #e74c3c; }
+
+        .today-panels { padding: 0 16px; }
+    </style>
+</head>
+<body class="mobile-page">
+<div class="mobile-stage">
+
+    <header class="app-header">
+        <div class="app-header-logo">Echo</div>
+        <div class="app-header-actions">
+            <button class="btn btn-ghost btn-sm" onclick="refreshTodayPage()" style="font-size:18px;padding:4px 8px">↺</button>
+            <button class="btn btn-ghost btn-sm" onclick="logout()">退出</button>
+        </div>
+    </header>
+
+    <div class="has-bottom-nav" style="overflow-y:auto">
+        <div class="greeting-header">
+            <div class="greeting-text">
+                <div class="greeting-sub" id="todayDateLabel">今天</div>
+                <div class="greeting-name" id="greetingTitle">你好 👋</div>
+            </div>
+            <div class="greeting-avatar" onclick="location.href='profile.html'" id="avatarEl">🙂</div>
+        </div>
+
+        <div class="date-strip" id="dateStrip"></div>
+
+        <div class="section-row" style="padding-bottom:0">
+            <div class="section-row-title">我的日记</div>
+            <span class="section-row-action" onclick="location.href='index.html'">查看全部</span>
+        </div>
+
+        <div id="todayNotice" style="padding:0 16px"></div>
+        <section id="todayStage" style="padding:0 16px"></section>
+
+        <!-- 今日内联编辑/补充（完成状态时显示） -->
+        <div class="today-panels" id="todayInlinePanels" style="display:none">
+            <div class="ep">
+                <div class="ep-title">📝 日记正文</div>
+                <div class="ep-hint">直接编辑，不会触发 AI</div>
+                <textarea class="ep-textarea" id="todayBodyTA" rows="8" placeholder="日记正文内容..."></textarea>
+                <div class="ep-actions">
+                    <button class="btn btn-primary" onclick="todaySaveBody()" id="todaySaveBodyBtn">💾 保存正文</button>
+                    <button class="btn btn-secondary" onclick="todayRegenBody()" id="todayRegenBtn">🤖 AI 重新生成</button>
+                </div>
+                <div class="ep-status" id="todayBodySt"></div>
+            </div>
+            <div class="sp" id="todaySuppSP" style="margin-bottom:8px">
+                <div class="sp-title">💬 继续补充</div>
+                <div class="sp-msgs" id="todaySuppMsgs"></div>
+                <div class="sp-input-row">
+                    <input class="sp-input" type="text" id="todaySuppInput" placeholder="输入补充内容..." onkeydown="if(event.key==='Enter')todaySendSupp()">
+                    <button class="btn btn-primary btn-sm" onclick="todaySendSupp()" id="todaySuppSendBtn">发送</button>
+                </div>
+                <div class="sp-save-row" id="todaySuppSaveRow">
+                    <button class="btn btn-primary" style="width:100%" onclick="todaySaveSupp()" id="todaySuppSaveBtn">✅ 保存本次补充</button>
+                    <div class="sp-status" id="todaySuppSt"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-row" style="padding-top:8px"><div class="section-row-title">快速记录</div></div>
+        <div class="quick-chips">
+            <div class="quick-chip quick-chip-1" onclick="scrollToJournal()">
+                <div class="quick-chip-title">感恩一刻 🌿</div>
+                <div class="quick-chip-desc">今天有什么让你感到开心？</div>
+                <span class="quick-chip-tag">开始写</span>
+            </div>
+            <div class="quick-chip quick-chip-2" onclick="scrollToJournal()">
+                <div class="quick-chip-title">今日意图 🌟</div>
+                <div class="quick-chip-desc">你想以什么心态过今天？</div>
+                <span class="quick-chip-tag">开始写</span>
+            </div>
+            <div class="quick-chip quick-chip-3" onclick="scrollToJournal()">
+                <div class="quick-chip-title">情绪日志 💬</div>
+                <div class="quick-chip-desc">此刻你有什么感受？</div>
+                <span class="quick-chip-tag">开始写</span>
+            </div>
+        </div>
+    </div>
+
+    <nav class="app-bottom-nav">
+        <a class="app-nav-item active" href="today.html"><span class="app-nav-icon">✍️</span><span class="app-nav-label">今日</span></a>
+        <a class="app-nav-item" href="index.html"><span class="app-nav-icon">📖</span><span class="app-nav-label">回忆</span></a>
+        <a class="app-nav-item" href="hope.html"><span class="app-nav-icon">🌱</span><span class="app-nav-label">希冀</span></a>
+        <a class="app-nav-item" href="profile.html"><span class="app-nav-icon">👤</span><span class="app-nav-label">我</span></a>
+    </nav>
+</div>
+
+<!-- ══ 底部弹层 ══ -->
+<div class="diary-sheet-overlay" id="sheetOverlay" onclick="closeDiarySheet()"></div>
+<div class="diary-sheet" id="diarySheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-close-floating">
+        <button class="sheet-close-btn" onclick="closeDiarySheet()">✕</button>
+    </div>
+
+    <!-- 正文编辑面板 -->
+    <div class="ep" style="margin-top:0">
+        <div class="ep-title">📝 日记正文</div>
+        <div class="ep-hint" id="sheetBodyHint">直接编辑，不会触发 AI</div>
+        <div id="sheetBodyContent"></div>
+        <div class="ep-actions" id="sheetBodyActions"></div>
+        <div class="ep-status" id="sheetBodySt"></div>
+    </div>
+
+    <!-- 补充对话面板 -->
+    <div class="sp" style="margin-bottom:16px">
+        <div class="sp-title">💬 继续补充</div>
+        <div class="sp-msgs" id="sheetSuppMsgs"></div>
+        <div class="sp-input-row">
+            <input class="sp-input" type="text" id="sheetSuppInput" placeholder="输入补充内容..." onkeydown="if(event.key==='Enter')sheetSendSupp()">
+            <button class="btn btn-primary btn-sm" onclick="sheetSendSupp()" id="sheetSuppSendBtn">发送</button>
+        </div>
+        <div class="sp-save-row" id="sheetSuppSaveRow">
+            <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="sheetSaveSupp()" id="sheetSuppSaveBtn">✅ 保存本次补充</button>
+            <div class="sp-status" id="sheetSuppSt"></div>
+        </div>
+    </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/today.js"></script>
+<script>
+if (!requireAuth()) {}
+else { initDateLabel(); initPage(); }
+
+let _recordDates = new Set();
+
+async function initPage() {
+    const now = new Date();
+    const [userRes, calRes] = await Promise.allSettled([
+        apiFetch('/users/me'),
+        apiFetch(`/history/calendar?year=${now.getFullYear()}&month=${now.getMonth()+1}`)
+    ]);
+    if (userRes.status === 'fulfilled') {
+        const u = userRes.value;
+        const nick = u.nickname || u.phone || '你';
+        document.getElementById('greetingTitle').textContent = getGreeting() + '，' + nick;
+        document.getElementById('avatarEl').textContent = nick.charAt(0);
+    } else {
+        document.getElementById('greetingTitle').textContent = getGreeting() + ' 👋';
+    }
+    if (calRes.status === 'fulfilled') {
+        (calRes.value.days || []).forEach(d => _recordDates.add(d.record_date));
+    }
+    buildDateStrip(_recordDates);
+    initTodayPage();
+}
+
+function getGreeting() {
+    const h = new Date().getHours();
+    if (h>=5&&h<9)  return '早上好 🌅';
+    if (h>=9&&h<12) return '上午好 ☀️';
+    if (h>=12&&h<14)return '中午好 🌤️';
+    if (h>=14&&h<18)return '下午好 ✨';
+    if (h>=18&&h<22)return '晚上好 🌙';
+    return '夜深了，注意休息 🌟';
+}
+
+function buildDateStrip(recordDates = new Set()) {
+    const strip = document.getElementById('dateStrip');
+    if (!strip) return;
+    strip.innerHTML = '';
+    const labels = ['日','一','二','三','四','五','六'];
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0,10);
+    for (let i = -3; i <= 3; i++) {
+        const d = new Date(today); d.setDate(today.getDate() + i);
+        const dateStr = d.toISOString().slice(0,10);
+        const isToday = dateStr === todayStr;
+        const hasRec  = recordDates.has(dateStr);
+        const div = document.createElement('div');
+        div.className = 'date-day' + (isToday ? ' today' : '') + (hasRec && !isToday ? ' has-record' : '');
+        div.style.cursor = 'pointer';
+        div.innerHTML = `<span class="date-day-label">${labels[d.getDay()]}</span><span class="date-day-num">${d.getDate()}</span>`;
+        div.addEventListener('click', () => openDiarySheet(dateStr));
+        strip.appendChild(div);
+    }
+}
+
+function scrollToJournal() {
+    const stage = document.getElementById('todayStage');
+    if (stage) stage.scrollIntoView({ behavior: 'smooth' });
+    const btn = stage && stage.querySelector('[onclick="startTodayConversation()"]');
+    if (btn) setTimeout(() => btn.click(), 400);
+}
+
+// ══════════════════════════════════════════════════════
+//  底部弹层
+// ══════════════════════════════════════════════════════
+const sheetState = { record: null, convId: null, dateStr: null };
+
+function _openSheet() {
+    document.getElementById('sheetOverlay').style.display = 'block';
+    const s = document.getElementById('diarySheet');
+    s.classList.add('open'); s.scrollTop = 0;
+    document.body.style.overflow = 'hidden';
+}
+
+function closeDiarySheet() {
+    document.getElementById('sheetOverlay').style.display = 'none';
+    document.getElementById('diarySheet').classList.remove('open');
+    document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDiarySheet(); });
+
+async function openDiarySheet(dateStr) {
+    sheetState.record = null; sheetState.convId = null; sheetState.dateStr = dateStr;
+
+    // 重置面板
+    document.getElementById('sheetBodyHint').textContent = '正在加载...';
+    document.getElementById('sheetBodyContent').innerHTML =
+        '<div style="padding:12px 0;text-align:center"><div class="loading-spinner"></div></div>';
+    document.getElementById('sheetBodyActions').innerHTML = '';
+    setSt('sheetBodySt','','');
+    document.getElementById('sheetSuppMsgs').innerHTML = '';
+    document.getElementById('sheetSuppSaveRow').style.display = 'none';
+    setSt('sheetSuppSt','','');
+    _setInputEnabled(false);
+
+    _openSheet();
+
+    try {
+        const rec = await apiFetch(`/history/daily-records/${dateStr}`);
+        sheetState.record = rec;
+        sheetState.convId = rec.conversation_id;
+        _renderSheetHasRecord(rec);
+    } catch(e) {
+        _renderSheetNoRecord();
+    }
+}
+
+function _renderSheetHasRecord(rec) {
+    document.getElementById('sheetBodyHint').textContent = '直接编辑，不会触发 AI';
+    document.getElementById('sheetBodyContent').innerHTML =
+        `<textarea class="ep-textarea" id="sheetBodyTA" rows="7" placeholder="日记正文内容...">${escapeHtml(rec.body_text || rec.summary_text || '')}</textarea>`;
+    document.getElementById('sheetBodyActions').innerHTML = `
+        <button class="btn btn-primary" onclick="sheetSaveBody()" id="sheetSaveBodyBtn">💾 保存正文</button>
+        <button class="btn btn-secondary" onclick="sheetRegenBody()" id="sheetRegenBtn">🤖 AI 重新生成</button>`;
+    _setInputEnabled(true);
+    document.getElementById('sheetSuppInput').placeholder = '输入补充内容...';
+}
+
+function _renderSheetNoRecord() {
+    document.getElementById('sheetBodyHint').textContent = '输入正文后保存，即可为这一天创建日记';
+    document.getElementById('sheetBodyContent').innerHTML =
+        `<textarea class="ep-textarea" id="sheetBodyTA" rows="7" placeholder="写下这一天发生的事…"></textarea>`;
+    document.getElementById('sheetBodyActions').innerHTML =
+        `<button class="btn btn-primary" onclick="sheetSaveBody()" id="sheetSaveBodyBtn">💾 保存正文</button>`;
+    // 补充先禁用，等正文保存后自动启用
+    _setInputEnabled(false);
+    document.getElementById('sheetSuppInput').placeholder = '请先保存正文，再来补充';
+}
+
+function _setInputEnabled(enabled) {
+    const i = document.getElementById('sheetSuppInput');
+    const b = document.getElementById('sheetSuppSendBtn');
+    if (i) i.disabled = !enabled;
+    if (b) b.disabled = !enabled;
+}
+
+// ── 保存正文（有记录/无记录两路径） ──
+async function sheetSaveBody() {
+    const ta = document.getElementById('sheetBodyTA');
+    const txt = ta ? ta.value.trim() : '';
+    if (!txt) { setSt('sheetBodySt','❌ 正文不能为空','err'); return; }
+
+    const btn = document.getElementById('sheetSaveBodyBtn');
+    btn.disabled = true; btn.textContent = '保存中...';
+    setSt('sheetBodySt','保存中...','');
+
+    try {
+        if (!sheetState.record) {
+            // 无记录 → 创建
+            const created = await apiFetch('/daily-records/manual', {
+                method: 'POST',
+                body: JSON.stringify({ record_date: sheetState.dateStr, body_text: txt })
+            });
+            sheetState.record = created;
+            sheetState.convId = created.conversation_id;
+            // 刷新整个有记录面板（AI 重建后正文可能有所不同）
+            _renderSheetHasRecord(created);
+            const newTa = document.getElementById('sheetBodyTA');
+            if (newTa && created.body_text) newTa.value = created.body_text;
+            setSt('sheetBodySt','✅ 日记已创建，结构化数据已同步','ok');
+            // 更新 dateStrip 标记
+            _recordDates.add(sheetState.dateStr);
+            buildDateStrip(_recordDates);
+        } else {
+            // 有记录 → 更新
+            await apiFetch(`/daily-records/${sheetState.record.id}/body`, {
+                method: 'PUT', body: JSON.stringify({ body_text: txt })
+            });
+            setSt('sheetBodySt','✅ 已保存，结构化数据已同步','ok');
+        }
+    } catch(e) { setSt('sheetBodySt','❌ '+e.message,'err'); }
+    finally {
+        const b = document.getElementById('sheetSaveBodyBtn');
+        if (b) { b.disabled = false; b.textContent = '💾 保存正文'; }
+    }
+}
+
+// ── AI 重新生成（返回值更新 textarea） ──
+async function sheetRegenBody() {
+    const r = sheetState.record; if (!r) return;
+    if (!confirm('确定让 AI 重新生成日记正文？每次会调整叙述风格和修辞。')) return;
+    const btn = document.getElementById('sheetRegenBtn');
+    btn.disabled = true; btn.textContent = '生成中...';
+    setSt('sheetBodySt','AI 生成中，请稍候…','');
+    try {
+        const updated = await apiFetch(`/daily-records/${r.id}/supplement`, { method:'POST', body:JSON.stringify({}) });
+        // 用返回值更新 textarea
+        const ta = document.getElementById('sheetBodyTA');
+        if (ta && updated && updated.body_text) ta.value = updated.body_text;
+        setSt('sheetBodySt','✅ 已重新生成，风格已调整','ok');
+    } catch(e) { setSt('sheetBodySt','❌ '+e.message,'err'); }
+    finally { btn.disabled = false; btn.textContent = '🤖 AI 重新生成'; }
+}
+
+// ── 补充消息 ──
+async function sheetSendSupp() {
+    const convId = sheetState.convId; const r = sheetState.record;
+    if (!convId || !r) return;
+    const input = document.getElementById('sheetSuppInput');
+    const content = input.value.trim(); if (!content) return;
+    const btn = document.getElementById('sheetSuppSendBtn');
+    btn.disabled = true; btn.textContent = '...'; input.disabled = true;
+    appendMsg('sheetSuppMsgs','user',content);
+    input.value = '';
+    try {
+        const resp = await apiFetch(`/conversations/${convId}/messages`, {
+            method:'POST', body:JSON.stringify({content_type:'text', content, is_supplement:true})
+        });
+        appendMsg('sheetSuppMsgs','ai', resp.ai_message.content);
+        document.getElementById('sheetSuppSaveRow').style.display = 'block';
+    } catch(e) { appendMsg('sheetSuppMsgs','system','发送失败：'+e.message); }
+    finally { btn.disabled = false; btn.textContent = '发送'; input.disabled = false; input.focus(); }
+}
+
+// ── 保存本次补充 ──
+async function sheetSaveSupp() {
+    const r = sheetState.record; if (!r) return;
+    const btn = document.getElementById('sheetSuppSaveBtn');
+    btn.disabled = true; btn.textContent = '处理中...';
+    setSt('sheetSuppSt','重建日记中...','');
+    try {
+        const updated = await apiFetch(`/daily-records/${r.id}/supplement`, { method:'POST', body:JSON.stringify({}) });
+        const ta = document.getElementById('sheetBodyTA');
+        if (ta && updated && updated.body_text) ta.value = updated.body_text;
+        setSt('sheetSuppSt','✅ 补充已保存，日记已更新','ok');
+        document.getElementById('sheetSuppSaveRow').style.display = 'none';
+    } catch(e) { setSt('sheetSuppSt','❌ '+e.message,'err'); }
+    finally { btn.disabled = false; btn.textContent = '✅ 保存本次补充'; }
+}
+
+// ══════════════════════════════════════════════════════
+//  今日内联面板
+// ══════════════════════════════════════════════════════
+function showTodayEditPanels() {
+    const record = todayPageState.todayRecord;
+    const conv   = todayPageState.conversation;
+    if (!record) return;
+
+    document.getElementById('todayInlinePanels').style.display = 'block';
+    document.getElementById('todayBodyTA').value = record.body_text || record.summary_text || '';
+    setSt('todayBodySt','','');
+
+    const suppInput = document.getElementById('todaySuppInput');
+    const suppSendBtn = document.getElementById('todaySuppSendBtn');
+    if (conv && conv.status === 'completed') {
+        suppInput.disabled = false; suppSendBtn.disabled = false;
+        suppInput.placeholder = '输入补充内容...';
+        document.getElementById('todaySuppMsgs').innerHTML = '';
+        document.getElementById('todaySuppSaveRow').style.display = 'none';
+        setSt('todaySuppSt','','');
+    } else {
+        suppInput.disabled = true; suppSendBtn.disabled = true;
+        suppInput.placeholder = '请先完成今日记录';
+    }
+    document.getElementById('todayInlinePanels').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+async function todaySaveBody() {
+    const r = todayPageState.todayRecord; if (!r) return;
+    const txt = document.getElementById('todayBodyTA').value.trim();
+    if (!txt) { setSt('todayBodySt','❌ 正文不能为空','err'); return; }
+    const btn = document.getElementById('todaySaveBodyBtn');
+    btn.disabled = true; btn.textContent = '保存中...'; setSt('todayBodySt','保存中...','');
+    try {
+        await apiFetch(`/daily-records/${r.id}/body`, {method:'PUT', body:JSON.stringify({body_text:txt})});
+        setSt('todayBodySt','✅ 已保存','ok');
+        await initTodayPage();
+    } catch(e) { setSt('todayBodySt','❌ '+e.message,'err'); }
+    finally { btn.disabled = false; btn.textContent = '💾 保存正文'; }
+}
+
+async function todayRegenBody() {
+    const r = todayPageState.todayRecord; if (!r) return;
+    if (!confirm('确定让 AI 重新生成日记正文？每次会调整叙述风格和修辞。')) return;
+    const btn = document.getElementById('todayRegenBtn');
+    btn.disabled = true; btn.textContent = '生成中...'; setSt('todayBodySt','AI 生成中，请稍候…','');
+    try {
+        const updated = await apiFetch(`/daily-records/${r.id}/supplement`, {method:'POST', body:JSON.stringify({})});
+        const ta = document.getElementById('todayBodyTA');
+        if (ta && updated && updated.body_text) ta.value = updated.body_text;
+        setSt('todayBodySt','✅ 已重新生成，风格已调整','ok');
+    } catch(e) { setSt('todayBodySt','❌ '+e.message,'err'); }
+    finally { btn.disabled = false; btn.textContent = '🤖 AI 重新生成'; }
+}
+
+async function todaySendSupp() {
+    const r = todayPageState.todayRecord;
+    const conv = todayPageState.conversation;
+    if (!r || !conv) return;
+    const input = document.getElementById('todaySuppInput');
+    const content = input.value.trim(); if (!content) return;
+    const btn = document.getElementById('todaySuppSendBtn');
+    btn.disabled = true; btn.textContent = '...'; input.disabled = true;
+    appendMsg('todaySuppMsgs','user',content);
+    input.value = '';
+    try {
+        const resp = await apiFetch(`/conversations/${conv.id}/messages`, {
+            method:'POST', body:JSON.stringify({content_type:'text', content, is_supplement:true})
+        });
+        appendMsg('todaySuppMsgs','ai', resp.ai_message.content);
+        document.getElementById('todaySuppSaveRow').style.display = 'block';
+    } catch(e) { appendMsg('todaySuppMsgs','system','发送失败：'+e.message); }
+    finally { btn.disabled = false; btn.textContent = '发送'; input.disabled = false; input.focus(); }
+}
+
+async function todaySaveSupp() {
+    const r = todayPageState.todayRecord; if (!r) return;
+    const btn = document.getElementById('todaySuppSaveBtn');
+    btn.disabled = true; btn.textContent = '处理中...'; setSt('todaySuppSt','重建日记中...','');
+    try {
+        const updated = await apiFetch(`/daily-records/${r.id}/supplement`, {method:'POST', body:JSON.stringify({})});
+        const ta = document.getElementById('todayBodyTA');
+        if (ta && updated && updated.body_text) ta.value = updated.body_text;
+        setSt('todaySuppSt','✅ 补充已保存','ok');
+        document.getElementById('todaySuppSaveRow').style.display = 'none';
+    } catch(e) { setSt('todaySuppSt','❌ '+e.message,'err'); }
+    finally { btn.disabled = false; btn.textContent = '✅ 保存本次补充'; }
+}
+
+// ══════════════════════════════════════════════════════
+//  工具函数
+// ══════════════════════════════════════════════════════
+function appendMsg(containerId, role, content) {
+    const c = document.getElementById(containerId); if (!c) return;
+    const d = document.createElement('div');
+    d.className = 'sp-msg' + (role==='user' ? ' user' : '');
+    const icon = role==='user' ? '👤' : role==='ai' ? '🤖' : '⚠️';
+    d.innerHTML = `<div class="sp-msg-ico">${icon}</div><div class="sp-msg-bubble">${escapeHtml(content)}</div>`;
+    c.appendChild(d);
+    c.scrollTop = c.scrollHeight;
+}
+
+function setSt(id, text, type) {
+    const el = document.getElementById(id); if (!el) return;
+    el.textContent = text;
+    el.className = 'ep-status' + (type ? ' '+type : '');
+}
+</script>
+</body>
+</html>

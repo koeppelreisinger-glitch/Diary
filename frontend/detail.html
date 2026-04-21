@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>回响 Echo — 历史详情</title>
+    <meta name="description" content="回响 Echo 历史详情页">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="mobile-page mobile-page--detail">
+    <div class="mobile-stage">
+        <!-- 导航栏 -->
+        <nav class="navbar">
+            <div class="navbar-brand">
+                <a href="index.html" style="color:inherit;text-decoration:none">← 返回记录主页</a>
+            </div>
+            <div class="navbar-actions">
+                <span id="navDate" style="font-weight:600;color:var(--text-secondary)"></span>
+            </div>
+        </nav>
+
+        <div class="container">
+            <!-- 搜索栏 -->
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="搜索：正文、总结、事件、情绪、消费、地点、标签..." oninput="onSearchInput()">
+                <button class="btn btn-secondary btn-sm" onclick="clearSearch()">清除</button>
+            </div>
+
+            <!-- 主内容区 -->
+            <div id="detailContent">
+                <div class="status-box">
+                    <div class="loading-spinner"></div>
+                    <div class="text" style="margin-top:12px">加载中...</div>
+                </div>
+            </div>
+
+            <!-- 轻量编辑区（数据加载成功后由 JS 显示） -->
+            <div id="editPanel" class="card edit-panel" style="display:none">
+                <div class="edit-panel-header">
+                    <div class="edit-panel-title">✏️ 编辑记录</div>
+                </div>
+
+                <!-- 备注 -->
+                <div class="edit-group">
+                    <label for="edit-note">备注</label>
+                    <textarea id="edit-note" rows="3" placeholder="添加或修改备注..."></textarea>
+                </div>
+
+                <!-- 关键词 -->
+                <div class="edit-group">
+                    <label for="edit-keywords">关键词 <span class="hint">英文逗号分隔，保存时整体替换</span></label>
+                    <input type="text" id="edit-keywords" placeholder="工作, 疲惫, 放松">
+                </div>
+
+                <!-- 已有标签 -->
+                <div class="edit-group">
+                    <label>当前标签 <span class="hint">点击 × 标记删除，保存时生效</span></label>
+                    <div class="edit-tags-row" id="edit-tags-current"></div>
+                </div>
+
+                <!-- 新增标签 -->
+                <div class="edit-group">
+                    <label for="edit-tags-add">新增标签 <span class="hint">英文逗号分隔，与现有标签重复的会被忽略</span></label>
+                    <input type="text" id="edit-tags-add" placeholder="复盘, 工作, 生活">
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="edit-actions">
+                    <button class="btn btn-primary" onclick="saveEdits()">保存修改</button>
+                    <button class="btn btn-secondary" onclick="resetEdits()">重置</button>
+                    <span id="edit-status" class="edit-status"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/detail.js"></script>
+    <script>
+        if (!requireAuth()) { /* 跳登录页 */ }
+        else { initDetail(); }
+    </script>
+</body>
+</html>

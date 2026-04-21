@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>希冀 — Echo</title>
+    <meta name="description" content="Echo 打卡与目标管理">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="mobile-page">
+<div class="mobile-stage">
+
+    <header class="app-header">
+        <div class="app-header-logo">Echo</div>
+        <div class="app-header-actions">
+            <button class="btn btn-ghost btn-sm" onclick="logout()">退出</button>
+        </div>
+    </header>
+
+    <div class="has-bottom-nav" style="overflow-y:auto">
+
+        <!-- 问候 -->
+        <div class="greeting-header">
+            <div class="greeting-text">
+                <div class="greeting-sub" id="todayDateLabel">Hope & Goals</div>
+                <div class="greeting-name">希冀 🌱</div>
+            </div>
+            <div class="greeting-avatar" style="font-size:24px">🎯</div>
+        </div>
+
+        <!-- Hero Banner -->
+        <div class="journal-banner" style="margin-top:16px;min-height:120px">
+            <div class="journal-banner-bg"></div>
+            <div class="journal-banner-deco"></div>
+            <div class="journal-banner-deco2"></div>
+            <div class="journal-banner-content">
+                <div class="journal-banner-tag">每日打卡</div>
+                <div class="journal-banner-title">让每一天<br>都靠近更好的自己</div>
+                <div class="journal-banner-sub">微小的坚持，带来巨大的改变</div>
+            </div>
+        </div>
+
+        <!-- 连续打卡 Streak -->
+        <div class="section-row" style="padding-bottom:0">
+            <div class="section-row-title">🔥 连续打卡</div>
+            <span class="streak-badge" style="font-size:13px;padding:6px 14px">
+                已连续 <strong id="streakCount">…</strong> 天
+            </span>
+        </div>
+
+        <!-- 7日日历（真实数据） -->
+        <div style="padding:8px 16px 16px">
+            <div style="background:#fff;border-radius:var(--radius-lg);padding:14px 16px;
+                        border:1px solid var(--border);box-shadow:var(--shadow)">
+                <div style="display:flex;justify-content:space-between" id="streakDays">
+                    <div style="color:var(--text-muted);font-size:13px;text-align:center;width:100%">加载中...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 打卡习惯 -->
+        <div class="section-row" style="padding-top:4px">
+            <div class="section-row-title">✅ 我的打卡</div>
+            <span class="section-row-action" onclick="showToast('✨ 管理打卡功能即将上线')">管理</span>
+        </div>
+
+        <div class="habit-card" onclick="toggleHabit(this, 0)">
+            <div class="habit-ring-wrap">
+                <svg class="habit-ring-svg" viewBox="0 0 56 56">
+                    <circle class="habit-ring-track" cx="28" cy="28" r="23"/>
+                    <circle class="habit-ring-fill" cx="28" cy="28" r="23"
+                        stroke="url(#hw0)" stroke-dasharray="144.51" stroke-dashoffset="43.35"/>
+                    <defs>
+                        <linearGradient id="hw0" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#F5A623"/>
+                            <stop offset="100%" stop-color="#F4836A"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="habit-ring-label">70%</div>
+            </div>
+            <div class="habit-info">
+                <div class="habit-name">🌅 早起</div>
+                <div class="habit-meta">目标 6:30 · 本周 5/7 天</div>
+            </div>
+            <button class="habit-check-btn done" id="habit-btn-0">✓</button>
+        </div>
+
+        <div class="habit-card" onclick="toggleHabit(this, 1)">
+            <div class="habit-ring-wrap">
+                <svg class="habit-ring-svg" viewBox="0 0 56 56">
+                    <circle class="habit-ring-track" cx="28" cy="28" r="23"/>
+                    <circle class="habit-ring-fill" cx="28" cy="28" r="23"
+                        stroke="url(#hw1)" stroke-dasharray="144.51" stroke-dashoffset="57.80"/>
+                    <defs>
+                        <linearGradient id="hw1" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#9D8FE0"/>
+                            <stop offset="100%" stop-color="#7B6EC6"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="habit-ring-label">60%</div>
+            </div>
+            <div class="habit-info">
+                <div class="habit-name">🧘 冥想</div>
+                <div class="habit-meta">每天 10 分钟 · 本周 4/7 天</div>
+            </div>
+            <button class="habit-check-btn" id="habit-btn-1">○</button>
+        </div>
+
+        <div class="habit-card" onclick="toggleHabit(this, 2)">
+            <div class="habit-ring-wrap">
+                <svg class="habit-ring-svg" viewBox="0 0 56 56">
+                    <circle class="habit-ring-track" cx="28" cy="28" r="23"/>
+                    <circle class="habit-ring-fill" cx="28" cy="28" r="23"
+                        stroke="url(#hw2)" stroke-dasharray="144.51" stroke-dashoffset="96.34"/>
+                    <defs>
+                        <linearGradient id="hw2" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#56C8A0"/>
+                            <stop offset="100%" stop-color="#4CAF7D"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="habit-ring-label">33%</div>
+            </div>
+            <div class="habit-info">
+                <div class="habit-name">🏃 跑步</div>
+                <div class="habit-meta">每周 3 次 · 本周 1/3 次</div>
+            </div>
+            <button class="habit-check-btn" id="habit-btn-2">○</button>
+        </div>
+
+        <button class="add-item-btn" onclick="showToast('✨ 新增打卡习惯即将上线')">＋ 新增打卡习惯</button>
+
+        <!-- 长期目标 -->
+        <div class="section-row" style="padding-top:8px">
+            <div class="section-row-title">🎯 我的目标</div>
+            <span class="section-row-action" onclick="showToast('✨ 管理目标即将上线')">管理</span>
+        </div>
+
+        <div class="goal-card">
+            <div class="goal-header">
+                <div class="goal-icon" style="background:#FEF0E2">📚</div>
+                <div class="goal-pct" style="color:#F5A623">60%</div>
+            </div>
+            <div class="goal-name">读完《心流》</div>
+            <div class="goal-progress-track">
+                <div class="goal-progress-fill" style="width:60%;background:var(--grad-warm)"></div>
+            </div>
+            <div class="goal-deadline">📅 目标完成日：2026-05-31</div>
+        </div>
+
+        <div class="goal-card">
+            <div class="goal-header">
+                <div class="goal-icon" style="background:#EDE8FD">🏃</div>
+                <div class="goal-pct" style="color:#9D8FE0">35%</div>
+            </div>
+            <div class="goal-name">全年跑步 365 公里</div>
+            <div class="goal-progress-track">
+                <div class="goal-progress-fill" style="width:35%;background:var(--grad-purple)"></div>
+            </div>
+            <div class="goal-deadline">📅 目标完成日：2026-12-31 · 已跑 127 km</div>
+        </div>
+
+        <div class="goal-card">
+            <div class="goal-header">
+                <div class="goal-icon" style="background:#E2F4EC">⭐</div>
+                <div class="goal-pct" style="color:#4CAF7D">45%</div>
+            </div>
+            <div class="goal-name">完成 Python 进阶课程</div>
+            <div class="goal-progress-track">
+                <div class="goal-progress-fill" style="width:45%;background:var(--grad-nature)"></div>
+            </div>
+            <div class="goal-deadline">📅 目标完成日：2026-06-30 · 已完成 9/20 课时</div>
+        </div>
+
+        <button class="add-item-btn" onclick="showToast('✨ 添加长期目标即将上线')" style="margin-bottom:24px">
+            ＋ 添加长期目标
+        </button>
+
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="app-bottom-nav">
+        <a class="app-nav-item" href="today.html">
+            <span class="app-nav-icon">✍️</span>
+            <span class="app-nav-label">今日</span>
+        </a>
+        <a class="app-nav-item" href="index.html">
+            <span class="app-nav-icon">📖</span>
+            <span class="app-nav-label">回忆</span>
+        </a>
+        <a class="app-nav-item active" href="hope.html">
+            <span class="app-nav-icon">🌱</span>
+            <span class="app-nav-label">希冀</span>
+        </a>
+        <a class="app-nav-item" href="profile.html">
+            <span class="app-nav-icon">👤</span>
+            <span class="app-nav-label">我</span>
+        </a>
+    </nav>
+
+</div>
+
+<div id="toastEl" style="display:none;position:fixed;bottom:90px;left:50%;
+    transform:translateX(-50%);background:rgba(28,28,30,0.88);color:#fff;
+    padding:10px 22px;border-radius:999px;font-size:13px;font-weight:600;
+    z-index:9999;white-space:nowrap;backdrop-filter:blur(12px)"></div>
+
+<script src="js/api.js"></script>
+<script>
+if (!requireAuth()) { /* 跳登录 */ }
+else { initDateLabel(); loadHopePage(); }
+
+async function loadHopePage() {
+    const now = new Date();
+    const [statsRes, calRes] = await Promise.allSettled([
+        apiFetch('/users/stats'),
+        apiFetch(`/history/calendar?year=${now.getFullYear()}&month=${now.getMonth() + 1}`)
+    ]);
+
+    // 更新 streak 数字
+    if (statsRes.status === 'fulfilled') {
+        document.getElementById('streakCount').textContent = statsRes.value.current_streak ?? 0;
+    }
+
+    // 构建本周7日打卡日历（真实数据）
+    const recordDates = new Set();
+    if (calRes.status === 'fulfilled') {
+        (calRes.value.days || []).forEach(d => recordDates.add(d.record_date));
+    }
+    buildStreakCalendar(recordDates);
+}
+
+function buildStreakCalendar(recordDates) {
+    const container = document.getElementById('streakDays');
+    container.innerHTML = '';
+    const labels = ['一','二','三','四','五','六','日'];
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+    // 本周一作为起点
+    const dayOfWeek = today.getDay() === 0 ? 7 : today.getDay(); // 1=Mon ... 7=Sun
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - dayOfWeek + 1 + i);
+        const dateStr = d.toISOString().slice(0, 10);
+        const isDone = recordDates.has(dateStr);
+        const isToday = dateStr === todayStr;
+
+        const div = document.createElement('div');
+        div.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:5px;flex:1';
+
+        const labelEl = document.createElement('span');
+        labelEl.style.cssText = 'font-size:11px;font-weight:600;color:var(--text-muted)';
+        labelEl.textContent = labels[i];
+
+        const numEl = document.createElement('div');
+        numEl.style.cssText = 'width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;transition:all 0.2s';
+
+        if (isDone) {
+            numEl.style.background = 'var(--grad-warm)';
+            numEl.style.color = '#fff';
+            numEl.style.boxShadow = '0 3px 10px rgba(245,166,35,0.35)';
+            numEl.textContent = '✓';
+        } else if (isToday) {
+            numEl.style.border = '2px solid var(--accent)';
+            numEl.style.color = 'var(--accent)';
+            numEl.textContent = d.getDate();
+        } else {
+            numEl.style.background = 'var(--bg-secondary)';
+            numEl.style.color = 'var(--text-muted)';
+            numEl.textContent = d.getDate();
+        }
+
+        div.appendChild(labelEl);
+        div.appendChild(numEl);
+        container.appendChild(div);
+    }
+}
+
+const habitDone = [true, false, false];
+function toggleHabit(card, idx) {
+    habitDone[idx] = !habitDone[idx];
+    const btn = document.getElementById(`habit-btn-${idx}`);
+    if (habitDone[idx]) {
+        btn.className = 'habit-check-btn done';
+        btn.textContent = '✓';
+        btn.style.transform = 'scale(1.3)';
+        setTimeout(() => btn.style.transform = '', 300);
+    } else {
+        btn.className = 'habit-check-btn';
+        btn.textContent = '○';
+    }
+}
+
+function showToast(msg) {
+    const t = document.getElementById('toastEl');
+    t.textContent = msg;
+    t.style.display = 'block';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.style.display = 'none', 2200);
+}
+</script>
+</body>
+</html>

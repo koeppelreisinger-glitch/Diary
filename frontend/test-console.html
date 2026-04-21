@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Echo — 后端联调台</title>
+    <meta name="description" content="围绕 Echo 后端接口的简易联调测试前端">
+    <link rel="stylesheet" href="css/test-console.css">
+</head>
+<body>
+    <header class="console-header">
+        <div class="console-header__main">
+            <p class="console-eyebrow">Backend Test Console</p>
+            <h1>Echo 后端联调台</h1>
+            <p class="console-subtitle">围绕认证、设置、会话、日记录和历史查询的简易测试前端。每次操作都会展示原始响应，便于联调与排错。</p>
+        </div>
+        <nav class="console-header__nav">
+            <a href="login.html">登录页</a>
+            <a href="index.html">记录页</a>
+        </nav>
+    </header>
+
+    <main class="console-shell">
+        <section class="panel panel-context">
+            <div class="panel-head">
+                <div>
+                    <h2>联调上下文</h2>
+                    <p class="panel-desc">这里会自动回填当前登录态、会话 ID、记录 ID 和日期。</p>
+                </div>
+                <div class="panel-actions">
+                    <button class="btn btn-secondary" id="btnRefreshContext">刷新上下文</button>
+                    <button class="btn btn-ghost" id="btnClearLocalState">清空本地状态</button>
+                </div>
+            </div>
+            <div class="context-grid">
+                <div class="context-item">
+                    <span class="context-label">Token</span>
+                    <code class="context-value" id="ctxToken">未登录</code>
+                </div>
+                <div class="context-item">
+                    <span class="context-label">用户</span>
+                    <code class="context-value" id="ctxUser">-</code>
+                </div>
+                <div class="context-item">
+                    <span class="context-label">手机号</span>
+                    <code class="context-value" id="ctxPhone">-</code>
+                </div>
+                <div class="context-item">
+                    <span class="context-label">会话 ID</span>
+                    <code class="context-value" id="ctxConversationId">-</code>
+                </div>
+                <div class="context-item">
+                    <span class="context-label">记录 ID</span>
+                    <code class="context-value" id="ctxRecordId">-</code>
+                </div>
+                <div class="context-item">
+                    <span class="context-label">记录日期</span>
+                    <code class="context-value" id="ctxRecordDate">-</code>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel panel-response">
+            <div class="panel-head">
+                <div>
+                    <h2>最后响应</h2>
+                    <p class="panel-desc">展示最近一次请求的路径、状态码和原始响应。</p>
+                </div>
+                <div class="panel-actions">
+                    <button class="btn btn-secondary" id="btnCopyResponse">复制响应</button>
+                </div>
+            </div>
+            <div class="response-meta">
+                <span id="lastRequestMeta">尚未发起请求</span>
+            </div>
+            <pre class="response-body" id="lastResponseBody">{
+  "message": "等待操作"
+}</pre>
+        </section>
+
+        <section class="panel">
+            <div class="panel-head">
+                <div>
+                    <h2>认证与用户</h2>
+                    <p class="panel-desc">对应 `/auth/register`、`/auth/login`、`/users/me`。</p>
+                </div>
+            </div>
+            <div class="endpoint-strip">
+                <code>POST /api/v1/auth/register</code>
+                <code>POST /api/v1/auth/login</code>
+                <code>GET /api/v1/users/me</code>
+            </div>
+            <div class="form-grid columns-3">
+                <label class="field">
+                    <span>手机号</span>
+                    <input type="text" id="authPhone" placeholder="13800000000">
+                </label>
+                <label class="field">
+                    <span>密码</span>
+                    <input type="password" id="authPassword" placeholder="Password123!">
+                </label>
+                <label class="field">
+                    <span>昵称</span>
+                    <input type="text" id="authNickname" placeholder="联调用户">
+                </label>
+            </div>
+            <div class="action-row">
+                <button class="btn btn-secondary" id="btnRandomPhone">生成测试手机号</button>
+                <button class="btn btn-primary" id="btnRegister">注册</button>
+                <button class="btn btn-primary" id="btnLogin">登录</button>
+                <button class="btn btn-secondary" id="btnGetMe">当前用户</button>
+                <button class="btn btn-ghost" id="btnLogout">退出登录</button>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-head">
+                <div>
+                    <h2>用户设置</h2>
+                    <p class="panel-desc">对应 `/settings`。建议联调前先设置时区。</p>
+                </div>
+            </div>
+            <div class="endpoint-strip">
+                <code>GET /api/v1/settings</code>
+                <code>PUT /api/v1/settings</code>
+            </div>
+            <div class="form-grid columns-4">
+                <label class="field">
+                    <span>时区</span>
+                    <input type="text" id="settingsTimezone" list="timezoneList" placeholder="Asia/Shanghai">
+                </label>
+                <label class="field">
+                    <span>输入偏好</span>
+                    <select id="settingsInputPreference">
+                        <option value="text">text</option>
+                        <option value="voice">voice</option>
+                        <option value="mixed">mixed</option>
+                    </select>
+                </label>
+                <label class="field field-checkbox">
+                    <span>提醒开关</span>
+                    <input type="checkbox" id="settingsReminderEnabled">
+                </label>
+                <label class="field">
+                    <span>提醒时间</span>
+                    <input type="time" id="settingsReminderTime">
+                </label>
+            </div>
+            <datalist id="timezoneList">
+                <option value="Asia/Shanghai"></option>
+                <option value="UTC"></option>
+                <option value="America/Denver"></option>
+            </datalist>
+            <div class="action-row">
+                <button class="btn btn-secondary" id="btnGetSettings">读取设置</button>
+                <button class="btn btn-primary" id="btnSaveSettings">保存设置</button>
+            </div>
+        </section>
+
+        <section class="panel panel-span-2">
+            <div class="panel-head">
+                <div>
+                    <h2>会话与聊天</h2>
+                    <p class="panel-desc">对应 `/conversations`、`/messages`、`/complete`。适合跑最小联调闭环。</p>
+                </div>
+            </div>
+            <div class="endpoint-strip">
+                <code>GET /api/v1/conversations/today</code>
+                <code>POST /api/v1/conversations</code>
+                <code>GET /api/v1/conversations/{id}/messages</code>
+                <code>POST /api/v1/conversations/{id}/messages</code>
+                <code>POST /api/v1/conversations/{id}/complete</code>
+            </div>
+            <div class="form-grid columns-4">
+                <label class="field field-span-2">
+                    <span>conversation_id</span>
+                    <input type="text" id="conversationId" placeholder="自动回填，也可手动粘贴">
+                </label>
+                <label class="field">
+                    <span>limit</span>
+                    <input type="number" id="conversationLimit" value="50" min="1" max="100">
+                </label>
+                <label class="field">
+                    <span>before_sequence</span>
+                    <input type="number" id="conversationBeforeSequence" placeholder="留空则不传">
+                </label>
+            </div>
+            <div class="sample-row">
+                <span class="sample-row__label">样例消息</span>
+                <button class="sample-chip" data-sample-message="今天在公司开了很多会，还见了客户，整个人有点累。">工作场景</button>
+                <button class="sample-chip" data-sample-message="晚上去咖啡店买了一杯咖啡花了32元，之后回家了。">消费场景</button>
+                <button class="sample-chip" data-sample-message="今天心情很好，和朋友散步聊天，觉得很放松。">情绪场景</button>
+            </div>
+            <div class="form-grid columns-4">
+                <label class="field">
+                    <span>content_type</span>
+                    <select id="messageContentType">
+                        <option value="text">text</option>
+                        <option value="voice">voice</option>
+                    </select>
+                </label>
+                <label class="field field-checkbox">
+                    <span>is_supplement</span>
+                    <input type="checkbox" id="messageIsSupplement">
+                </label>
+                <label class="field field-span-2">
+                    <span>media_file_id</span>
+                    <input type="text" id="messageMediaFileId" placeholder="voice 类型时可填写">
+                </label>
+            </div>
+            <label class="field">
+                <span>消息内容</span>
+                <textarea id="messageContent" rows="4" placeholder="输入要发送的消息内容"></textarea>
+            </label>
+            <div class="action-row">
+                <button class="btn btn-secondary" id="btnGetTodayConversation">今日会话</button>
+                <button class="btn btn-primary" id="btnCreateConversation">创建今日会话</button>
+                <button class="btn btn-secondary" id="btnGetMessages">读取消息</button>
+                <button class="btn btn-primary" id="btnSendMessage">发送消息</button>
+                <button class="btn btn-primary" id="btnCompleteConversation">完成会话</button>
+            </div>
+        </section>
+
+        <section class="panel panel-span-2">
+            <div class="panel-head">
+                <div>
+                    <h2>日记录</h2>
+                    <p class="panel-desc">对应 `/daily-records/today`、轻量编辑、正文重建和补写保存。</p>
+                </div>
+            </div>
+            <div class="endpoint-strip">
+                <code>GET /api/v1/daily-records/today</code>
+                <code>PUT /api/v1/daily-records/{record_id}</code>
+                <code>PUT /api/v1/daily-records/{record_id}/body</code>
+                <code>POST /api/v1/daily-records/{record_id}/supplement</code>
+            </div>
+            <div class="form-grid columns-3">
+                <label class="field field-span-2">
+                    <span>record_id</span>
+                    <input type="text" id="recordId" placeholder="自动回填，也可手动粘贴">
+                </label>
+                <label class="field">
+                    <span>record_date</span>
+                    <input type="text" id="recordDate" placeholder="自动回填">
+                </label>
+            </div>
+            <div class="subpanel-grid">
+                <section class="subpanel">
+                    <h3>正文重建</h3>
+                    <label class="field">
+                        <span>body_text</span>
+                        <textarea id="dailyBodyText" rows="8" placeholder="修改后的完整正文"></textarea>
+                    </label>
+                    <div class="action-row">
+                        <button class="btn btn-secondary" id="btnGetTodayRecord">读取今日记录</button>
+                        <button class="btn btn-primary" id="btnUpdateBody">保存正文并重建</button>
+                    </div>
+                </section>
+                <section class="subpanel">
+                    <h3>补写保存</h3>
+                    <label class="field">
+                        <span>supplement note</span>
+                        <input type="text" id="supplementNote" placeholder="可留空">
+                    </label>
+                    <p class="field-help">会从关联 conversation 里重新汇总全部 user 消息，再执行重建。</p>
+                    <div class="action-row">
+                        <button class="btn btn-primary" id="btnSaveSupplement">保存本次补充</button>
+                    </div>
+                </section>
+                <section class="subpanel">
+                    <h3>轻量编辑</h3>
+                    <label class="field">
+                        <span>user_note</span>
+                        <textarea id="editUserNote" rows="3" placeholder="备注"></textarea>
+                    </label>
+                    <div class="form-grid columns-2">
+                        <label class="field">
+                            <span>keywords</span>
+                            <input type="text" id="editKeywords" placeholder="工作, 咖啡, 疲惫">
+                        </label>
+                        <label class="field">
+                            <span>tags_to_add</span>
+                            <input type="text" id="editTagsToAdd" placeholder="复盘, 项目A">
+                        </label>
+                    </div>
+                    <label class="field">
+                        <span>tags_to_remove</span>
+                        <input type="text" id="editTagsToRemove" placeholder="用逗号输入要删的 tag UUID">
+                    </label>
+                    <div class="action-row">
+                        <button class="btn btn-primary" id="btnSaveLightEdit">保存轻量编辑</button>
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <section class="panel panel-span-2">
+            <div class="panel-head">
+                <div>
+                    <h2>历史查询</h2>
+                    <p class="panel-desc">支持主列表、详情、日历、时间轴和五张结构化子表。日期支持 `YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD / YYYYMMDD`。</p>
+                </div>
+            </div>
+            <div class="endpoint-strip">
+                <code>GET /api/v1/history/daily-records</code>
+                <code>GET /api/v1/history/daily-records/{record_date}</code>
+                <code>GET /api/v1/history/calendar</code>
+                <code>GET /api/v1/history/timeline</code>
+                <code>GET /api/v1/history/events|emotions|expenses|locations|tags</code>
+            </div>
+            <div class="subpanel-grid subpanel-grid--history">
+                <section class="subpanel">
+                    <h3>单日详情</h3>
+                    <div class="form-grid columns-2">
+                        <label class="field">
+                            <span>record_date</span>
+                            <input type="text" id="historyDetailDate" placeholder="2026-04-18">
+                        </label>
+                        <label class="field field-align-end">
+                            <span>&nbsp;</span>
+                            <button class="btn btn-primary btn-block" id="btnHistoryDetail">查询详情</button>
+                        </label>
+                    </div>
+                </section>
+                <section class="subpanel">
+                    <h3>列表与结构化查询</h3>
+                    <div class="form-grid columns-4">
+                        <label class="field">
+                            <span>endpoint</span>
+                            <select id="historyEndpoint">
+                                <option value="daily-records">daily-records</option>
+                                <option value="events">events</option>
+                                <option value="emotions">emotions</option>
+                                <option value="expenses">expenses</option>
+                                <option value="locations">locations</option>
+                                <option value="tags">tags</option>
+                                <option value="calendar">calendar</option>
+                                <option value="timeline">timeline</option>
+                            </select>
+                        </label>
+                        <label class="field history-list-only">
+                            <span>page</span>
+                            <input type="number" id="historyPage" value="1" min="1">
+                        </label>
+                        <label class="field history-list-only">
+                            <span>page_size</span>
+                            <input type="number" id="historyPageSize" value="20" min="1" max="100">
+                        </label>
+                        <label class="field history-timeline-only">
+                            <span>limit</span>
+                            <input type="number" id="historyLimit" value="100" min="1" max="500">
+                        </label>
+                    </div>
+                    <div class="form-grid columns-4 history-date-range">
+                        <label class="field">
+                            <span>start_date</span>
+                            <input type="text" id="historyStartDate" placeholder="2026-04-01">
+                        </label>
+                        <label class="field">
+                            <span>end_date</span>
+                            <input type="text" id="historyEndDate" placeholder="2026-04-30">
+                        </label>
+                        <label class="field history-calendar-only">
+                            <span>year</span>
+                            <input type="number" id="historyYear" min="2000" max="2100" value="2026">
+                        </label>
+                        <label class="field history-calendar-only">
+                            <span>month</span>
+                            <input type="number" id="historyMonth" min="1" max="12" value="4">
+                        </label>
+                    </div>
+                    <div class="form-grid columns-4 history-daily-only">
+                        <label class="field">
+                            <span>keyword</span>
+                            <input type="text" id="historyDailyKeyword" placeholder="summary 关键词">
+                        </label>
+                        <label class="field">
+                            <span>tag</span>
+                            <input type="text" id="historyDailyTag" placeholder="标签名">
+                        </label>
+                        <label class="field">
+                            <span>min_emotion_score</span>
+                            <input type="number" id="historyMinEmotionScore" min="0" max="10">
+                        </label>
+                        <label class="field">
+                            <span>max_emotion_score</span>
+                            <input type="number" id="historyMaxEmotionScore" min="0" max="10">
+                        </label>
+                    </div>
+                    <div class="form-grid columns-4 history-events-only">
+                        <label class="field">
+                            <span>keyword</span>
+                            <input type="text" id="historyEventsKeyword" placeholder="事件关键词">
+                        </label>
+                    </div>
+                    <div class="form-grid columns-4 history-emotions-only">
+                        <label class="field">
+                            <span>emotion_label</span>
+                            <input type="text" id="historyEmotionLabel" placeholder="疲惫">
+                        </label>
+                        <label class="field">
+                            <span>min_intensity</span>
+                            <input type="number" id="historyMinIntensity" min="1" max="5">
+                        </label>
+                        <label class="field">
+                            <span>max_intensity</span>
+                            <input type="number" id="historyMaxIntensity" min="1" max="5">
+                        </label>
+                    </div>
+                    <div class="form-grid columns-4 history-expenses-only">
+                        <label class="field">
+                            <span>category</span>
+                            <input type="text" id="historyExpenseCategory" placeholder="餐饮">
+                        </label>
+                        <label class="field">
+                            <span>min_amount</span>
+                            <input type="number" id="historyMinAmount" min="0" step="0.01">
+                        </label>
+                        <label class="field">
+                            <span>max_amount</span>
+                            <input type="number" id="historyMaxAmount" min="0" step="0.01">
+                        </label>
+                    </div>
+                    <div class="form-grid columns-4 history-locations-only">
+                        <label class="field">
+                            <span>name</span>
+                            <input type="text" id="historyLocationName" placeholder="地点模糊匹配">
+                        </label>
+                    </div>
+                    <div class="form-grid columns-4 history-tags-only">
+                        <label class="field">
+                            <span>tag_name</span>
+                            <input type="text" id="historyTagName" placeholder="工作">
+                        </label>
+                    </div>
+                    <div class="action-row">
+                        <button class="btn btn-primary" id="btnHistoryQuery">发起查询</button>
+                    </div>
+                </section>
+            </div>
+        </section>
+
+        <section class="panel panel-span-2">
+            <div class="panel-head">
+                <div>
+                    <h2>操作日志</h2>
+                    <p class="panel-desc">记录最近的操作与结果，便于回看联调过程。</p>
+                </div>
+                <div class="panel-actions">
+                    <button class="btn btn-ghost" id="btnClearLog">清空日志</button>
+                </div>
+            </div>
+            <ul class="log-list" id="logList">
+                <li class="log-list__empty">日志为空，开始操作后会显示在这里。</li>
+            </ul>
+        </section>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/test-console.js"></script>
+</body>
+</html>

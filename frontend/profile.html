@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>我 — Echo</title>
+    <meta name="description" content="Echo 个人中心">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="mobile-page">
+<div class="mobile-stage">
+
+    <!-- Profile Hero -->
+    <div class="profile-hero" style="padding-top:max(32px, env(safe-area-inset-top))">
+        <div class="profile-avatar" id="profileAvatar">🙂</div>
+        <div class="profile-name" id="profileName">加载中...</div>
+        <div class="profile-sub" id="profileSub">Echo 日记用户</div>
+    </div>
+
+    <div class="has-bottom-nav" style="overflow-y:auto;background:var(--bg-secondary)">
+
+        <!-- 统计数据 -->
+        <div class="profile-stats" style="border-radius:0;box-shadow:none;border-left:none;border-right:none">
+            <div class="profile-stat">
+                <div class="profile-stat-value" id="statDays">—</div>
+                <div class="profile-stat-label">记录天数</div>
+            </div>
+            <div class="profile-stat">
+                <div class="profile-stat-value" id="statStreak" style="color:var(--accent)">—</div>
+                <div class="profile-stat-label">连续打卡</div>
+            </div>
+            <div class="profile-stat">
+                <div class="profile-stat-value" id="statEvents">—</div>
+                <div class="profile-stat-label">记录事件</div>
+            </div>
+        </div>
+
+        <!-- 账号信息 -->
+        <div class="profile-section" style="margin-top:20px">
+            <div class="profile-section-title">账号信息</div>
+            <div class="profile-row">
+                <div class="profile-row-icon" style="background:#FEF0E2">📱</div>
+                <div class="profile-row-text">
+                    <div class="profile-row-label">手机号</div>
+                    <div class="profile-row-sub" id="profilePhone">—</div>
+                </div>
+                <span class="profile-row-value" style="color:var(--success)">已绑定</span>
+            </div>
+            <div class="profile-row" onclick="showEditNickname()">
+                <div class="profile-row-icon" style="background:#EDE8FD">✏️</div>
+                <div class="profile-row-text">
+                    <div class="profile-row-label">修改昵称</div>
+                    <div class="profile-row-sub" id="nicknameHint">—</div>
+                </div>
+                <span class="profile-row-arrow">›</span>
+            </div>
+            <div class="profile-row" onclick="showComingSoon('更换头像')">
+                <div class="profile-row-icon" style="background:#E2F4EC">🖼️</div>
+                <div class="profile-row-text">
+                    <div class="profile-row-label">更换头像</div>
+                </div>
+                <span class="profile-row-arrow">›</span>
+            </div>
+        </div>
+
+        <!-- 修改昵称内联区 -->
+        <div id="editNicknamePanel" style="display:none;margin:0 16px 12px">
+            <div style="background:#fff;border-radius:var(--radius-lg);padding:16px;
+                        border:1px solid var(--border);box-shadow:var(--shadow)">
+                <div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-bottom:10px">
+                    修改昵称
+                </div>
+                <input id="nicknameInput" type="text" maxlength="50" placeholder="请输入新昵称（1-50字）"
+                    style="width:100%;padding:10px 14px;border:1px solid var(--border);
+                           border-radius:var(--radius);font-size:14px;font-family:var(--font-family);
+                           color:var(--text-primary);outline:none;box-sizing:border-box">
+                <div style="display:flex;gap:10px;margin-top:12px">
+                    <button class="btn btn-primary" style="flex:1" onclick="saveNickname()">保存</button>
+                    <button class="btn btn-secondary" style="flex:1"
+                        onclick="document.getElementById('editNicknamePanel').style.display='none'">取消</button>
+                </div>
+                <div id="nicknameStatus" style="font-size:12px;color:var(--text-muted);margin-top:8px"></div>
+            </div>
+        </div>
+
+        <!-- 偏好设置 -->
+        <div class="profile-section">
+            <div class="profile-section-title">偏好设置</div>
+            <div class="profile-row">
+                <div class="profile-row-icon" style="background:#FEF0E2">🌙</div>
+                <div class="profile-row-text">
+                    <div class="profile-row-label">深色模式</div>
+                    <div class="profile-row-sub">即将上线</div>
+                </div>
+                <label class="profile-toggle">
+                    <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode(this)">
+                    <span class="profile-toggle-slider"></span>
+                </label>
+            </div>
+            <div class="profile-row">
+                <div class="profile-row-icon" style="background:#E2F4EC">🔔</div>
+                <div class="profile-row-text">
+                    <div class="profile-row-label">每日提醒</div>
+                    <div class="profile-row-sub">晚上 21:00 记录今天</div>
+                </div>
+                <label class="profile-toggle">
+                    <input type="checkbox" checked>
+                    <span class="profile-toggle-slider"></span>
+                </label>
+            </div>
+            <div class="profile-row" onclick="showComingSoon('导出数据')">
+                <div class="profile-row-icon" style="background:#EDE8FD">📦</div>
+                <div class="profile-row-text">
+                    <div class="profile-row-label">导出我的数据</div>
+                    <div class="profile-row-sub">JSON / Markdown 格式</div>
+                </div>
+                <span class="profile-row-arrow">›</span>
+            </div>
+        </div>
+
+        <!-- 关于 -->
+        <div class="profile-section">
+            <div class="profile-section-title">关于</div>
+            <div class="profile-row" onclick="showComingSoon('隐私政策')">
+                <div class="profile-row-icon" style="background:#FEF0E2">🔒</div>
+                <div class="profile-row-text">
+                    <div class="profile-row-label">隐私政策</div>
+                </div>
+                <span class="profile-row-arrow">›</span>
+            </div>
+            <div class="profile-row">
+                <div class="profile-row-icon" style="background:#F7F5F1">ℹ️</div>
+                <div class="profile-row-text">
+                    <div class="profile-row-label">版本信息</div>
+                </div>
+                <span class="profile-row-value">v0.1.0 Beta</span>
+            </div>
+        </div>
+
+        <!-- 退出按钮 -->
+        <button class="profile-logout" onclick="logout()">🚪 退出登录</button>
+        <div style="height:12px"></div>
+
+    </div>
+
+    <!-- 底部导航 -->
+    <nav class="app-bottom-nav">
+        <a class="app-nav-item" href="today.html">
+            <span class="app-nav-icon">✍️</span>
+            <span class="app-nav-label">今日</span>
+        </a>
+        <a class="app-nav-item" href="index.html">
+            <span class="app-nav-icon">📖</span>
+            <span class="app-nav-label">回忆</span>
+        </a>
+        <a class="app-nav-item" href="hope.html">
+            <span class="app-nav-icon">🌱</span>
+            <span class="app-nav-label">希冀</span>
+        </a>
+        <a class="app-nav-item active" href="profile.html">
+            <span class="app-nav-icon">👤</span>
+            <span class="app-nav-label">我</span>
+        </a>
+    </nav>
+
+</div>
+
+<!-- Toast -->
+<div id="comingSoonToast" style="display:none;position:fixed;bottom:90px;left:50%;
+    transform:translateX(-50%);background:rgba(28,28,30,0.88);color:#fff;
+    padding:10px 22px;border-radius:999px;font-size:13px;font-weight:600;
+    z-index:9999;white-space:nowrap;backdrop-filter:blur(12px)"></div>
+
+<script src="js/api.js"></script>
+<script>
+if (!requireAuth()) { /* 跳登录 */ }
+else { loadProfile(); }
+
+let _currentNickname = '';
+
+async function loadProfile() {
+    try {
+        // 并行请求用户信息和统计
+        const [userRes, statsRes] = await Promise.allSettled([
+            apiFetch('/users/me'),
+            apiFetch('/users/stats')
+        ]);
+
+        if (userRes.status === 'fulfilled') {
+            const user = userRes.value;
+            _currentNickname = user.nickname || '';
+            document.getElementById('profileName').textContent = user.nickname || user.phone;
+            document.getElementById('profileSub').textContent = user.email || 'Echo 日记用户';
+            document.getElementById('profilePhone').textContent = user.phone;
+            document.getElementById('nicknameHint').textContent = user.nickname;
+            // 头像显示首字
+            const av = document.getElementById('profileAvatar');
+            if (av) av.textContent = (user.nickname || user.phone || '我').charAt(0);
+        }
+
+        if (statsRes.status === 'fulfilled') {
+            const s = statsRes.value;
+            document.getElementById('statDays').textContent = s.total_days ?? '—';
+            document.getElementById('statStreak').textContent = s.current_streak ?? '—';
+            document.getElementById('statEvents').textContent = s.total_events ?? '—';
+        }
+    } catch (e) {
+        console.warn('Profile load error:', e);
+    }
+}
+
+function showEditNickname() {
+    const panel = document.getElementById('editNicknamePanel');
+    const input = document.getElementById('nicknameInput');
+    input.value = _currentNickname;
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    if (panel.style.display === 'block') input.focus();
+}
+
+async function saveNickname() {
+    const input = document.getElementById('nicknameInput');
+    const status = document.getElementById('nicknameStatus');
+    const val = input.value.trim();
+    if (!val) { status.textContent = '昵称不能为空'; return; }
+    status.textContent = '保存中...';
+    try {
+        const res = await apiFetch('/users/me', {
+            method: 'PUT',
+            body: JSON.stringify({ nickname: val })
+        });
+        _currentNickname = res.nickname;
+        document.getElementById('profileName').textContent = res.nickname;
+        document.getElementById('nicknameHint').textContent = res.nickname;
+        document.getElementById('editNicknamePanel').style.display = 'none';
+        showToast('✅ 昵称已更新');
+    } catch (e) {
+        status.textContent = e.message || '保存失败';
+    }
+}
+
+function showComingSoon(f) {
+    showToast(`✨ ${f}功能即将上线`);
+}
+
+function toggleDarkMode(el) { showToast('✨ 深色模式即将上线'); el.checked = false; }
+
+function showToast(msg) {
+    const t = document.getElementById('comingSoonToast');
+    t.textContent = msg;
+    t.style.display = 'block';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.style.display = 'none', 2200);
+}
+</script>
+</body>
+</html>
