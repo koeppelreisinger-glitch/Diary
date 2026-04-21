@@ -3,7 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
+import logging
 import os
+
+logger = logging.getLogger(__name__)
 
 from app.core.config import settings
 from app.api.router import api_router
@@ -57,6 +60,29 @@ def create_app() -> FastAPI:
                 "data": None
             }
         )
+
+    # ── 启动事件：打印配置摘要，快速定位部署问题 ──
+    @app.on_event("startup")
+    async def _startup_config_check():
+        db_url = settings.SQLALCHEMY_DATABASE_URI
+        is_localhost = "localhost" in db_url or "127.0.0.1" in db_url
+        has_ai_auth = bool(
+            (settings.TOKENHUB_AUTHORIZATION or "").strip()
+            or (settings.TOKENHUB_API_KEY or "").strip()
+        )
+
+        logger.info("=" * 60)
+        logger.info("Echo Backend 启动配置检查")
+        logger.info("  DB: %s", "localhost（⚠️ 服务器部署时会 500）" if is_localhost else "云数据库 ✓")
+        logger.info("  AI Auth: %s", "已配置 ✓" if has_ai_auth else "未配置（AI 功能不可用）")
+        logger.info("  Secret Key 默认值: %s", settings.SECRET_KEY == "REPLACE_THIS_WITH_A_SECURE_SECRET_KEY")
+        logger.info("=" * 60)
+
+        if is_localhost and os.environ.get("VERCEL"):
+            logger.error(
+                "[致命] Vercel 环境检测到数据库指向 localhost！"
+                "请在 Vercel Dashboard > Settings > Environment Variables 中设置 DATABASE_URL。"
+            )
 
     return app
 

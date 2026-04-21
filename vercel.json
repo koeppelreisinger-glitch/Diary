@@ -1,5 +1,5 @@
 {
-  "functions": [
+  "builds": [
     {
       "src": "app/main.py",
       "use": "@vercel/python"
@@ -9,14 +9,30 @@
       "use": "@vercel/static"
     }
   ],
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/(.*)",
-      "destination": "/app/main.py"
+      "src": "/api/(.*)",
+      "dest": "app/main.py"
     },
     {
-      "source": "/(.*)",
-      "destination": "/frontend/$1"
+      "src": "/health",
+      "dest": "app/main.py"
+    },
+    {
+      "src": "/frontend/(.*)",
+      "dest": "/frontend/$1"
+    },
+    {
+      "src": "/(.*\\.(css|js|html|ico|png|jpg|svg|woff2?))",
+      "dest": "/frontend/$1"
+    },
+    {
+      "src": "/",
+      "dest": "/frontend/login.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "app/main.py"
     }
   ]
 }
