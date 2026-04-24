@@ -92,6 +92,11 @@ class ConversationMessage(Base):
         nullable=True, 
         comment="关联媒体文件（可选）"
     )
+    image_url: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        comment="消息附带的图片访问 URL（可选）",
+    )
     sequence_number: Mapped[int] = mapped_column(
         Integer, 
         nullable=False, 

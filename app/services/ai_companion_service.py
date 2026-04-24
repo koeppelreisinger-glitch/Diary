@@ -43,22 +43,35 @@ class AICompanionService:
 
         return reply_text.strip()
 
-    def _build_chat_messages(self, messages: List[ConversationMessage]) -> list[dict[str, str]]:
-        chat_messages: list[dict[str, str]] = [
+    def _build_chat_messages(self, messages: List[ConversationMessage]) -> list[dict]:
+        chat_messages: list[dict] = [
             {"role": "system", "content": settings.TOKENHUB_CHAT_SYSTEM_PROMPT}
         ]
 
-        recent_messages = messages[-settings.TOKENHUB_CHAT_CONTEXT_LIMIT :]
+        recent_messages = messages[-settings.TOKENHUB_CHAT_CONTEXT_LIMIT:]
         for message in recent_messages:
             role = "assistant" if message.role == "ai" else "user"
             if role not in {"user", "assistant"}:
                 continue
 
             content = (message.content or "").strip()
-            if not content:
-                continue
 
-            chat_messages.append({"role": role, "content": content})
+            # 若消息携带图片 URL，构造 Vision 多模态内容数组
+            image_url = getattr(message, "image_url", None)
+            if image_url and role == "user":
+                parts: list[dict] = [
+                    {
+                        "type": "image_url",
+                        "image_url": {"url": image_url, "detail": "low"},
+                    }
+                ]
+                if content:
+                    parts.append({"type": "text", "text": content})
+                chat_messages.append({"role": role, "content": parts})
+            else:
+                if not content:
+                    continue
+                chat_messages.append({"role": role, "content": content})
 
         return chat_messages
     def _fallback_reply(self, messages: List[ConversationMessage]) -> str:

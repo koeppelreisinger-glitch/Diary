@@ -66,6 +66,7 @@ class DailyRecord(Base):
     expenses = relationship("RecordExpense", back_populates="record", cascade="all, delete-orphan")
     locations = relationship("RecordLocation", back_populates="record", cascade="all, delete-orphan")
     tags = relationship("RecordTag", back_populates="record", cascade="all, delete-orphan")
+    images = relationship("DailyRecordImage", back_populates="record", cascade="all, delete-orphan")
 
 Index(
     "uq_daily_records_user_id_record_date",

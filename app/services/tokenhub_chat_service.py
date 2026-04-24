@@ -1,8 +1,8 @@
-import asyncio
 import json
 import logging
 from typing import Any
-from urllib import error, request
+
+import httpx
 
 from app.core.config import settings
 from app.core.exceptions import ErrorResponseAPIException
@@ -16,22 +16,29 @@ class TokenHubChatService:
         messages: list[dict[str, str]],
         *,
         temperature: float,
+        response_format: dict | None = None,
     ) -> dict[str, Any]:
-        payload = {
+        payload: dict[str, Any] = {
             "model": settings.TOKENHUB_MODEL,
             "messages": messages,
             "temperature": temperature,
             "stream": False,
         }
-        return await asyncio.to_thread(self._post_chat_completion, payload)
+        # doc14 §3.3/§3.4: 后台 AI 调用强制 JSON 输出时传入 response_format
+        if response_format:
+            payload["response_format"] = response_format
+        return await self._post_chat_completion(payload)
 
     async def create_text_completion(
         self,
         messages: list[dict[str, str]],
         *,
         temperature: float,
+        response_format: dict | None = None,
     ) -> str:
-        response_data = await self.create_chat_completion(messages, temperature=temperature)
+        response_data = await self.create_chat_completion(
+            messages, temperature=temperature, response_format=response_format
+        )
         return self.extract_text_content(response_data).strip()
 
     def extract_text_content(self, response_data: dict[str, Any]) -> str:
@@ -60,35 +67,47 @@ class TokenHubChatService:
 
         return str(content)
 
-    def _post_chat_completion(self, payload: dict[str, Any]) -> dict[str, Any]:
+    async def _post_chat_completion(self, payload: dict[str, Any]) -> dict[str, Any]:
         headers = {
             "Authorization": self._build_authorization_header(),
             "Content-Type": "application/json",
         }
-        body = json.dumps(payload).encode("utf-8")
-        http_request = request.Request(
-            settings.TOKENHUB_CHAT_COMPLETIONS_URL,
-            data=body,
-            headers=headers,
-            method="POST",
-        )
 
         try:
-            with request.urlopen(http_request, timeout=settings.TOKENHUB_TIMEOUT_SECONDS) as response:
-                raw = response.read().decode("utf-8")
-                return json.loads(raw)
-        except error.HTTPError as exc:
-            detail = exc.read().decode("utf-8", errors="ignore")
-            logger.error("TokenHub request failed: status=%s body=%s", exc.code, detail)
+            async with httpx.AsyncClient(timeout=settings.TOKENHUB_TIMEOUT_SECONDS) as client:
+                response = await client.post(
+                    settings.TOKENHUB_CHAT_COMPLETIONS_URL,
+                    headers=headers,
+                    json=payload,
+                )
+                if response.status_code != 200:
+                    detail = response.text
+                    logger.error(
+                        "TokenHub request failed: status=%s body=%s",
+                        response.status_code,
+                        detail[:500],
+                    )
+                    raise ErrorResponseAPIException(
+                        status_code=502,
+                        detail=f"AI 请求失败，状态码 {response.status_code}",
+                        code=50203,
+                    )
+                return response.json()
+
+        except ErrorResponseAPIException:
+            raise
+        except httpx.TimeoutException as exc:
+            logger.error("TokenHub request timed out: %s", exc)
             raise ErrorResponseAPIException(
                 status_code=502,
-                detail=f"AI 请求失败，状态码 {exc.code}",
-                code=50203,
+                detail="AI 请求超时，请稍后重试",
+                code=50207,
             ) from exc
-        except error.URLError as exc:
+        except httpx.RequestError as exc:
+            logger.error("TokenHub network error: %s", exc)
             raise ErrorResponseAPIException(
                 status_code=502,
-                detail=f"AI 网络请求失败：{exc.reason}",
+                detail=f"AI 网络请求失败：{exc}",
                 code=50204,
             ) from exc
         except json.JSONDecodeError as exc:

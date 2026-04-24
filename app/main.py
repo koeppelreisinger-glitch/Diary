@@ -32,10 +32,16 @@ def create_app() -> FastAPI:
     # 注册 API 路由
     app.include_router(api_router, prefix=settings.API_V1_STR)
 
-    # 挂载前端静态文件
+    # 挂载前端静态文件（本地开发使用；Vercel 由 @vercel/static build 接管）
     frontend_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend")
-    if os.path.isdir(frontend_dir):
+    if os.path.isdir(frontend_dir) and not os.environ.get("VERCEL"):
         app.mount("/frontend", StaticFiles(directory=frontend_dir), name="frontend")
+
+    # 挂载用户上传图片目录（本地开发使用；Vercel 无持久存储，跳过挂载）
+    if not os.environ.get("VERCEL"):
+        uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
+        os.makedirs(uploads_dir, exist_ok=True)
+        app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
     # 注册全局异常处理：覆盖默认的 422 格式
     @app.exception_handler(RequestValidationError)

@@ -50,3 +50,10 @@ htmlcov/
 
 # Vercel
 .vercel
+
+# Debug and deploy scripts (might contain secrets)
+check_*.py
+set_*.py
+setup_*.py
+switch_*.py
+fix_*.py

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>寻迹 — Echo</title>
+    <meta name="description" content="Echo 生活数据可视化 · 发现你的足迹">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="mobile-page">
+    <div class="mobile-stage">
+
+        <header class="app-header">
+            <div class="app-header-logo">Echo</div>
+            <div class="app-header-actions">
+                <button class="btn btn-ghost btn-sm" onclick="logout()">退出</button>
+            </div>
+        </header>
+
+        <div class="has-bottom-nav" style="overflow-y:auto">
+
+            <!-- ① Hero 区 -->
+            <div class="xj-hero">
+                <div class="xj-hero-left">
+                    <div class="xj-eyebrow">寻迹 · TRACE</div>
+                    <div class="xj-page-title">发现你的足迹</div>
+                    <div class="xj-page-sub" id="xjRangeLabel">本月 · 加载中</div>
+                </div>
+                <div class="xj-hero-orb">🔍</div>
+            </div>
+
+            <!-- 时间段选择器 -->
+            <div class="xj-range-tabs">
+                <button class="xj-range-tab" data-range="week" id="tab-week" onclick="setRange('week')">本周</button>
+                <button class="xj-range-tab active" data-range="month" id="tab-month" onclick="setRange('month')">本月</button>
+                <button class="xj-range-tab" data-range="quarter" id="tab-quarter" onclick="setRange('quarter')">近三月</button>
+                <button class="xj-range-tab" data-range="all" id="tab-all" onclick="setRange('all')">全部</button>
+            </div>
+
+            <!-- ② 收支洞察卡 -->
+            <div class="xj-section-wrap">
+                <div class="card xj-card" id="xjExpenseCard">
+                    <div class="xj-accent-line xj-accent-warm"></div>
+                    <div class="xj-card-header">
+                        <div>
+                            <span class="xj-card-title">💰 收支洞察</span>
+                        </div>
+                        <div class="xj-expense-tabs">
+                            <button class="xj-expense-tab active" id="etab-overview" onclick="switchExpTab('overview')">概览</button>
+                            <button class="xj-expense-tab" id="etab-category" onclick="switchExpTab('category')">分类</button>
+                            <button class="xj-expense-tab" id="etab-ledger" onclick="switchExpTab('ledger')">明细</button>
+                        </div>
+                    </div>
+
+                    <!-- Tab 概览 -->
+                    <div class="xj-expense-pane" id="xjExpOverview">
+                        <div class="xj-exp-summary-row">
+                            <div>
+                                <div class="xj-exp-label">本期支出</div>
+                                <div class="xj-exp-hero" id="xjTotalAmt">¥ 0.00</div>
+                            </div>
+                            <div class="xj-exp-top-badge" id="xjTopCat">—</div>
+                        </div>
+                        <div id="xjMiniBar" class="xj-mini-bars"></div>
+                    </div>
+
+                    <!-- Tab 分类 -->
+                    <div class="xj-expense-pane" id="xjExpCategory" style="display:none">
+                        <div id="xjCatBars" class="xj-cat-bars"></div>
+                    </div>
+
+                    <!-- Tab 明细 -->
+                    <div class="xj-expense-pane" id="xjExpLedger" style="display:none">
+                        <div id="xjLedgerList" class="xj-ledger-list"></div>
+                    </div>
+
+                    <div class="xj-card-empty" id="xjExpEmpty" style="display:none">
+                        💸 还没有消费记录<br>
+                        <small>去今日和 Echo 聊聊你的花销吧</small>
+                    </div>
+
+                    <div class="xj-card-loading" id="xjExpLoading">加载中…</div>
+                </div>
+            </div>
+
+            <!-- ③ 情绪图谱卡 -->
+            <div class="xj-section-wrap">
+                <div class="card xj-card">
+                    <div class="xj-accent-line xj-accent-purple"></div>
+                    <div class="xj-card-header">
+                        <span class="xj-card-title">😊 心情谱</span>
+                        <span class="xj-card-sub">情绪的涟漪</span>
+                    </div>
+                    <!-- Sparkline -->
+                    <div class="xj-spark-wrap" id="xjSparkWrap">
+                        <svg id="xjSparkSvg" class="xj-spark-svg" viewBox="0 0 300 60" preserveAspectRatio="none"></svg>
+                    </div>
+                    <!-- Emotion chips -->
+                    <div class="xj-emotion-chips" id="xjEmotionChips">
+                        <div class="xj-card-loading">加载中…</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ④ 事件流水区 -->
+            <div style="margin-bottom:14px">
+                <div class="xj-stream-header">
+                    <span class="xj-card-title">🌊 事件流</span>
+                    <span class="xj-card-sub">记忆漂浮其上</span>
+                </div>
+                <div class="xj-stream" id="xjStream">
+                    <div class="xj-stream-loading" id="xjStreamLoading">加载中…</div>
+                </div>
+            </div>
+
+            <!-- ⑤ 地点足迹 -->
+            <div class="xj-section-wrap">
+                <div class="card xj-card">
+                    <div class="xj-accent-line xj-accent-sky"></div>
+                    <div class="xj-card-header">
+                        <span class="xj-card-title">📍 足迹</span>
+                        <span class="xj-card-sub">走过的地方</span>
+                    </div>
+                    <div class="xj-place-chips" id="xjPlaceChips">
+                        <div class="xj-card-loading">加载中…</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ⑥ 标签云 -->
+            <div class="xj-section-wrap" style="margin-bottom:28px">
+                <div class="card xj-card">
+                    <div class="xj-accent-line xj-accent-coral"></div>
+                    <div class="xj-card-header">
+                        <span class="xj-card-title">🏷️ 标签</span>
+                        <span class="xj-card-sub">生活关键词</span>
+                    </div>
+                    <div class="xj-tag-cloud" id="xjTagCloud">
+                        <div class="xj-card-loading">加载中…</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 底部导航 -->
+        <nav class="app-bottom-nav">
+            <a class="app-nav-item" href="today.html">
+                <span class="app-nav-icon">✍️</span>
+                <span class="app-nav-label">今日</span>
+            </a>
+            <a class="app-nav-item" href="index.html">
+                <span class="app-nav-icon">📖</span>
+                <span class="app-nav-label">回忆</span>
+            </a>
+            <a class="app-nav-item active" href="trace.html">
+                <span class="app-nav-icon">🔍</span>
+                <span class="app-nav-label">寻迹</span>
+            </a>
+            <a class="app-nav-item" href="profile.html">
+                <span class="app-nav-icon">👤</span>
+                <span class="app-nav-label">我</span>
+            </a>
+        </nav>
+
+    </div>
+
+    <div id="toastEl" style="display:none;position:fixed;bottom:90px;left:50%;
+    transform:translateX(-50%);background:rgba(28,28,30,0.88);color:#fff;
+    padding:10px 22px;border-radius:999px;font-size:13px;font-weight:600;
+    z-index:9999;white-space:nowrap;backdrop-filter:blur(12px)"></div>
+
+    <script src="js/api.js"></script>
+    <script src="js/trace.js"></script>
+    <script>
+        if (!requireAuth()) { /* redirect */ }
+        else { initTrace(); }
+    </script>
+</body>
+
+</html>

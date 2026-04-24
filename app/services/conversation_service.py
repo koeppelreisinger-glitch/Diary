@@ -6,7 +6,6 @@ from sqlalchemy import select, func, desc, asc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 import asyncio
-from fastapi import BackgroundTasks
 
 from app.models.conversation import Conversation, ConversationMessage
 from app.models.user_setting import UserSetting
@@ -187,6 +186,7 @@ class ConversationService:
             content_type=request.content_type,
             content=request.content or "（语音转写等占位）",
             media_file_id=request.media_file_id,
+            image_url=request.image_url,
             sequence_number=user_seq
         )
         session.add(user_msg)

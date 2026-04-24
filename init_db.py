@@ -23,6 +23,8 @@ from app.models.conversation import Conversation, ConversationMessage  # noqa: F
 from app.models.daily_record import (
     DailyRecord, RecordEvent, RecordEmotion, RecordExpense, RecordLocation, RecordTag
 )  # noqa: F401
+from app.models.media import DailyRecordImage  # noqa: F401  ← 图片表（缺失则 /media/* 全部 500）
+
 
 
 
@@ -38,7 +40,12 @@ async def init_db() -> None:
         await conn.run_sync(Base.metadata.create_all)
 
     await engine.dispose()
-    print("\n[OK] 表创建成功：users, user_settings, conversations, conversation_messages")
+    print(
+        "\n[OK] 表创建/确认成功："
+        "users, user_settings, conversations, conversation_messages, "
+        "daily_records, record_events, record_emotions, record_expenses, "
+        "record_locations, record_tags, daily_record_images"
+    )
 
 
 if __name__ == "__main__":

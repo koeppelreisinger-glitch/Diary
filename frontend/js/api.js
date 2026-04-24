@@ -61,11 +61,17 @@ async function apiFetch(url, options = {}) {
         throw new Error('未授权，请重新登录');
     }
 
-    const json = await response.json();
+    // 安全解析 JSON（后端 500 可能返回纯文本，避免 SyntaxError）
+    let json;
+    try {
+        json = await response.json();
+    } catch (e) {
+        throw new Error(`服务器错误 (${response.status})，请稍后重试`);
+    }
 
     // 业务错误
     if (!response.ok) {
-        const msg = json.message || `请求失败 (${response.status})`;
+        const msg = json?.message || `请求失败 (${response.status})`;
         throw new Error(msg);
     }
 

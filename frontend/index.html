@@ -51,6 +51,24 @@
 
             </div>
 
+            <!-- ═══ 照片里的今天 ═══ -->
+            <div class="section-row" style="padding-top:4px;padding-bottom:0" id="photoTodayRow">
+                <div class="section-row-title">📸 照片里的今天</div>
+            </div>
+            <div style="padding:0 16px 4px" id="photoTodayContainer">
+                <div class="status-box" style="padding:14px 0">
+                    <div class="loading-spinner"></div>
+                </div>
+            </div>
+
+            <!-- ═══ 回忆相册 ═══ -->
+            <div class="section-row" style="padding-top:4px;padding-bottom:0" id="photoStreamRow">
+                <div class="section-row-title">🖼️ 回忆相册</div>
+                <span class="section-row-action" id="photoStreamToggle" onclick="togglePhotoStream()"
+                    style="cursor:pointer">展开 ▼</span>
+            </div>
+            <div id="photoStreamContainer" style="display:none;padding:0 16px 8px"></div>
+
             <!-- ═══ 历史记录 ═══ -->
             <div class="section-row" style="padding-top:4px">
                 <div class="section-row-title">历史记录</div>
@@ -131,9 +149,9 @@
                 <span class="app-nav-icon">📖</span>
                 <span class="app-nav-label">回忆</span>
             </a>
-            <a class="app-nav-item" href="hope.html">
-                <span class="app-nav-icon">🌱</span>
-                <span class="app-nav-label">希冀</span>
+            <a class="app-nav-item" href="trace.html">
+                <span class="app-nav-icon">🔍</span>
+                <span class="app-nav-label">寻迹</span>
             </a>
             <a class="app-nav-item" href="profile.html">
                 <span class="app-nav-icon">👤</span>
@@ -151,6 +169,7 @@
             init();
             initDateLabel();
             loadGreeting();
+            loadPhotoToday();
         }
 
         async function loadGreeting() {
@@ -162,6 +181,101 @@
                 const av = document.getElementById('memAvatar');
                 if (av && nickname) av.textContent = nickname.charAt(0);
             } catch (e) { /* 静默失败 */ }
+        }
+
+        // ── 照片里的今天（doc13 §3.6：on-this-day 情感钩子）──────────────
+        async function loadPhotoToday() {
+            const container = document.getElementById('photoTodayContainer');
+            const row = document.getElementById('photoTodayRow');
+            try {
+                const data = await apiFetch('/media/on-this-day');
+                if (!data.items || data.items.length === 0) {
+                    if (row) row.style.display = 'none';
+                    if (container) container.style.display = 'none';
+                    return;
+                }
+                container.innerHTML = data.items.map(function (group) {
+                    var imgs = group.images.slice(0, 5).map(function (img) {
+                        var src = img.thumbnail_url || img.url;
+                        return '<img src="' + escapeHtml(src) + '"'
+                            + ' alt="' + escapeHtml(img.ai_caption || '') + '"'
+                            + ' title="' + escapeHtml(img.ai_caption || '') + '"'
+                            + ' style="width:72px;height:72px;object-fit:cover;border-radius:8px;'
+                            + 'flex-shrink:0;cursor:pointer"'
+                            + ' onclick="window.open(\'' + escapeHtml(img.url) + '\',\'_blank\')">';
+                    }).join('');
+                    var year = new Date(group.record_date + 'T00:00:00').getFullYear();
+                    return '<div style="margin-bottom:10px">'
+                        + '<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">📅 ' + year + '年今日</div>'
+                        + '<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">' + imgs + '</div>'
+                        + '</div>';
+                }).join('');
+            } catch (e) {
+                if (row) row.style.display = 'none';
+                if (container) container.style.display = 'none';
+            }
+        }
+
+        // ── 回忆相册图片流（doc13 §3.6：胶卷/方格视图）─────────────────
+        var _photoStreamLoaded = false;
+
+        function togglePhotoStream() {
+            var container = document.getElementById('photoStreamContainer');
+            var toggle = document.getElementById('photoStreamToggle');
+            if (!container) return;
+            if (container.style.display === 'none') {
+                container.style.display = 'block';
+                toggle.textContent = '收起 ▲';
+                if (!_photoStreamLoaded) {
+                    _photoStreamLoaded = true;
+                    loadPhotoStream(container);
+                }
+            } else {
+                container.style.display = 'none';
+                toggle.textContent = '展开 ▼';
+            }
+        }
+
+        async function loadPhotoStream(container) {
+            container.innerHTML = '<div class="status-box" style="padding:14px 0">'
+                + '<div class="loading-spinner"></div></div>';
+            try {
+                var data = await apiFetch('/media/history?page=1&page_size=30');
+                if (!data.items || data.items.length === 0) {
+                    container.innerHTML = '<div class="status-box" style="padding:14px 0">'
+                        + '<div class="text" style="font-size:13px">还没有图片，在今日对话中发送吧 📷</div></div>';
+                    return;
+                }
+                container.innerHTML = data.items.map(function (group) {
+                    var d = new Date(group.record_date + 'T00:00:00');
+                    var dateLabel = (d.getMonth() + 1) + '月' + d.getDate() + '日';
+                    var imgs = group.images.map(function (img) {
+                        var src = img.thumbnail_url || img.url;
+                        var captionHtml = img.ai_caption
+                            ? '<div style="position:absolute;bottom:0;left:0;right:0;'
+                            + 'background:linear-gradient(transparent,rgba(0,0,0,.6));'
+                            + 'color:#fff;font-size:10px;padding:4px 4px 3px;'
+                            + 'border-radius:0 0 10px 10px;'
+                            + 'overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'
+                            + escapeHtml(img.ai_caption) + '</div>'
+                            : '';
+                        return '<div style="position:relative;width:88px;height:88px;flex-shrink:0">'
+                            + '<img src="' + escapeHtml(src) + '" alt=""'
+                            + ' style="width:88px;height:88px;object-fit:cover;border-radius:10px;'
+                            + 'cursor:pointer;display:block"'
+                            + ' onclick="window.open(\'' + escapeHtml(img.url) + '\',\'_blank\')">'
+                            + captionHtml
+                            + '</div>';
+                    }).join('');
+                    return '<div style="margin-bottom:14px">'
+                        + '<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">📅 ' + dateLabel + '</div>'
+                        + '<div style="display:flex;flex-wrap:wrap;gap:6px">' + imgs + '</div>'
+                        + '</div>';
+                }).join('');
+            } catch (e) {
+                container.innerHTML = '<div class="status-box" style="padding:14px 0">'
+                    + '<div class="text" style="font-size:13px">' + escapeHtml(e.message) + '</div></div>';
+            }
         }
     </script>
 </body>

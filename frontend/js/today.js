@@ -4,6 +4,10 @@ const todayPageState = {
     todayRecord: null,
 };
 
+// ── 图片上传状态 ──────────────────────────────
+let _pendingImageId  = null;  // 已上传图片的 UUID
+let _pendingImageSrc = null;  // 上传后的服务器 URL（或本地 ObjectURL）
+
 async function initTodayPage() {
     await refreshTodayPage();
 }
@@ -147,8 +151,39 @@ function renderStateRecording() {
 
                 <div class="chat-input-panel">
                     <label class="chat-input-label" for="todayMessageInput">今天发生了什么？</label>
-                    <textarea id="todayMessageInput" rows="4" placeholder="直接说今天的事、感受、消费、地点都可以。"></textarea>
-                    <div class="chat-actions">
+
+                    <!-- 图片预览区（默认隐藏） -->
+                    <div id="imgPreviewArea" style="display:none;align-items:center;gap:10px;
+                         padding:8px 12px;background:var(--bg-secondary);border-radius:10px;
+                         margin-bottom:8px;border:1px dashed var(--border)">
+                        <div style="position:relative;width:56px;height:56px;border-radius:8px;overflow:hidden;flex-shrink:0">
+                            <img id="imgPreviewThumb" src="" alt="预览"
+                                 style="width:100%;height:100%;object-fit:cover">
+                            <button onclick="clearImageSelection()"
+                                    style="position:absolute;top:2px;right:2px;width:18px;height:18px;
+                                           border-radius:50%;background:rgba(0,0,0,.55);color:#fff;
+                                           font-size:11px;border:none;cursor:pointer;line-height:18px;padding:0">
+                                ×
+                            </button>
+                        </div>
+                        <span style="font-size:12px;color:var(--text-secondary)">已选择 1 张照片</span>
+                        <span id="imgUploadStatus" style="font-size:11px;color:var(--text-muted)"></span>
+                    </div>
+
+                    <!-- 输入栏（📷 + textarea） -->
+                    <div style="display:flex;align-items:flex-end;gap:8px">
+                        <label for="imgFileInput" title="发送图片"
+                               style="font-size:22px;cursor:pointer;opacity:.7;padding:4px;
+                                      transition:opacity .2s;user-select:none;flex-shrink:0"
+                               onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=.7">📷</label>
+                        <input type="file" id="imgFileInput" accept="image/*"
+                               style="display:none" onchange="onImageSelected(event)">
+                        <textarea id="todayMessageInput" rows="3"
+                                  placeholder="直接说今天的事、感受、消费、地点都可以。"
+                                  style="flex:1"></textarea>
+                    </div>
+
+                    <div class="chat-actions" style="margin-top:8px">
                         <button class="btn btn-primary" id="sendTodayMessageBtn" onclick="sendTodayMessage()">发送</button>
                         <button class="btn btn-secondary" id="completeTodayBtn" onclick="completeTodayConversation()">结束今日记录</button>
                     </div>
@@ -175,10 +210,17 @@ function renderTodayMessages(messages) {
 
     return messages.map((message) => {
         const isUser = message.role === 'user';
+        const imgHtml = (isUser && message.image_url)
+            ? `<div style="max-width:220px;border-radius:10px;overflow:hidden;margin-bottom:6px">
+                   <img src="${escapeHtml(message.image_url)}" alt="发送的图片"
+                        style="width:100%;height:auto;display:block;cursor:pointer"
+                        onclick="window.open(this.src,'_blank')">
+               </div>`
+            : '';
         return `
             <div class="chat-message ${isUser ? 'chat-message-user' : 'chat-message-ai'}">
                 <div class="chat-message__label">${isUser ? '我' : 'Echo'}</div>
-                <div class="chat-message__bubble">${escapeHtml(message.content || '')}</div>
+                <div class="chat-message__bubble">${imgHtml}${escapeHtml(message.content || '')}</div>
             </div>
         `;
     }).join('');
@@ -206,8 +248,14 @@ async function sendTodayMessage() {
     const sendBtn = document.getElementById('sendTodayMessageBtn');
     const content = input.value.trim();
 
-    if (!content) {
-        renderTodayNotice('请输入消息内容后再发送', 'error');
+    if (!content && !_pendingImageId) {
+        renderTodayNotice('请输入文字或选择图片后再发送', 'error');
+        return;
+    }
+
+    // 如果图片还在上传中（有 ObjectURL 但无 server URL），提示等待
+    if (_pendingImageSrc && _pendingImageSrc.startsWith('blob:') && !_pendingImageId) {
+        renderTodayNotice('图片仍在上传中，请稍等…', 'error');
         return;
     }
 
@@ -216,17 +264,21 @@ async function sendTodayMessage() {
         sendBtn.disabled = true;
         sendBtn.textContent = '发送中...';
 
+        const body = {
+            content_type: 'text',
+            content: content || '（图片消息）',
+            is_supplement: false,
+        };
+        if (_pendingImageSrc) body.image_url = _pendingImageSrc;
+
         const response = await apiFetch(`/conversations/${todayPageState.conversation.id}/messages`, {
             method: 'POST',
-            body: JSON.stringify({
-                content_type: 'text',
-                content,
-                is_supplement: false,
-            }),
+            body: JSON.stringify(body),
         });
 
         todayPageState.messages.push(response.user_message, response.ai_message);
         input.value = '';
+        clearImageSelection();
         renderStateRecording();
     } catch (err) {
         renderTodayNotice(err.message || '发送失败', 'error');
@@ -234,6 +286,59 @@ async function sendTodayMessage() {
         sendBtn.disabled = false;
         sendBtn.textContent = '发送';
     }
+}
+
+// ── 图片上传相关 ──────────────────────────────────────────────
+
+/** 用户选择图片后触发：本地预览 + 后台上传 */
+async function onImageSelected(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // 本地预览（立即显示）
+    const objectUrl = URL.createObjectURL(file);
+    _pendingImageSrc = objectUrl;
+    _pendingImageId  = null;
+
+    const previewArea  = document.getElementById('imgPreviewArea');
+    const previewThumb = document.getElementById('imgPreviewThumb');
+    const uploadStatus = document.getElementById('imgUploadStatus');
+    if (previewArea)  previewArea.style.display  = 'flex';
+    if (previewThumb) previewThumb.src = objectUrl;
+    if (uploadStatus) uploadStatus.textContent = '上传中…';
+
+    // 后台上传
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const resp = await fetch('/api/v1/media/upload', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${getToken()}` },
+            body: formData,
+        });
+        const json = await resp.json();
+        if (json && json.data) {
+            _pendingImageId  = json.data.id;
+            _pendingImageSrc = json.data.url;  // 切换为服务器 URL
+            if (uploadStatus) uploadStatus.textContent = '✅ 已上传';
+        } else {
+            throw new Error(json?.message || '上传失败');
+        }
+    } catch (e) {
+        if (uploadStatus) uploadStatus.textContent = '⚠️ 上传失败，仅本地预览';
+        console.warn('[today] image upload error:', e);
+    }
+}
+
+/** 取消图片选择，清除状态 */
+function clearImageSelection() {
+    _pendingImageId  = null;
+    _pendingImageSrc = null;
+    const fileInput  = document.getElementById('imgFileInput');
+    const previewArea = document.getElementById('imgPreviewArea');
+    if (fileInput)   fileInput.value = '';
+    if (previewArea) previewArea.style.display = 'none';
 }
 
 async function completeTodayConversation() {

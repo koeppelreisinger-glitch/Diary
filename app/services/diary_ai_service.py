@@ -13,46 +13,14 @@ logger = logging.getLogger(__name__)
 # 全局提示词常量
 # ─────────────────────────────────────────────────────────────────────────────
 
-_ANALYSIS_SYSTEM_PROMPT = """你是「Echo 日记」的 AI 分析引擎。
-你的任务：基于用户当天的完整对话或正文，提取结构化日记数据，输出严格 JSON。
+_ANALYSIS_SYSTEM_PROMPT = """你是「Echo 日记」AI分析引擎。基于对话或正文提取结构化日记数据，只输出JSON，不加Markdown或解释。
 
-【输出规范】
-- 只输出 JSON，不加 Markdown/解释/代码块标记
-- 所有字符串使用双引号，数字使用 number 类型，不加引号
-- 如果某个字段确实没有信息则留空数组 [] 或 null，但绝不能编造
-
-【五表提取规范】
-1. events（事件表）：
-   - 每条记录一个真实发生的事件，用简洁的一句话描述（≤30字）
-   - 保留时间、人物、地点等关键信息，不丢失核心事实
-   - 重复或非常相似的事件合并为一条
-
-2. emotions（情绪表）：
-   - 每条记录一种情绪状态，emotion_label 必须是一个简洁的中文词（2-4字），不得用短句
-   - 优先从以下词汇中选用，可选范围仅限此类：
-     高能正向：激动、兴奋、期待、热情、振奋、狂喜、喜悦、惊喜
-     中正向：开心、高兴、满足、快乐、感动、温暖、放松、感恩、幸福、轻松、自信、踏实
-     中性：平静、淡然、沉稳、无感、思念、安心、普通
-     中负向：烦躁、焦虑、紧张、担忧、郁闷、委屈、不安、压抑、愤怒、疲惫、孤独、失望
-     低落负向：低落、悲伤、痛苦、绝望、失落、空虚、哀伤、崩溃
-   - 如果以上词汇不能准确描述，可用最接近的2-4字中文词，但不可以用标点或空格
-   - intensity 是 1-5 的整数，1=微弱，3=中等，5=强烈
-   - 不要重复相同情绪
-
-3. expenses（消费表）：
-   - 必须有明确金额才记录，amount 须为数字，不能模糊估算
-   - currency 默认 CNY，如有外币则填写对应货币代码
-   - category 用简短中文分类（餐饮/交通/购物/娱乐/其他）
-   - description 填写消费的具体内容（如：星巴克拿铁中杯）
-
-4. locations（地点表）：
-   - 只记录用户明确提到的真实地点，name 要尽量完整、真实可识别
-   - 使用具体名称而非泛称（如：「静安寺合生汇」而非「商场」；「陕西南路地铁站」而非「地铁」）
-   - 如用户提到小区/公司/学校等，尽量保留具体名称
-
-5. tags（标签表）：
-   - 3-8 个最能代表今天的关键词标签
-   - 简短有力，2-6字为佳（如：深夜加班、家庭聚会、运动打卡）"""
+字段规范：
+- events: 每条一个真实事件，≤30字，合并重复
+- emotions: emotion_label为2-4字中文情绪词（开心/焦虑/疲惫/平静等），intensity为1-5整数（1弱5强），不重复
+- expenses: 有明确金额才记，amount为数字，currency默认CNY，category简短中文（餐饮/交通/购物/娱乐/其他）
+- locations: 只记明确提到的真实地点，用具体名称而非泛称
+- tags: 3-8个关键词，2-6字/个"""
 
 _FROM_MESSAGES_USER_TEMPLATE = """\
 请分析以下对话，生成日记数据，严格按照 JSON 格式输出：
@@ -114,6 +82,7 @@ class DiaryAIService:
         response_text = await TokenHubChatService().create_text_completion(
             chat_messages,
             temperature=settings.TOKENHUB_SUMMARY_TEMPERATURE,
+            response_format={"type": "json_object"},  # doc14 §3.4.2: 强制合法 JSON
         )
 
         logger.info(
@@ -143,6 +112,7 @@ class DiaryAIService:
         response_text = await TokenHubChatService().create_text_completion(
             chat_messages,
             temperature=settings.TOKENHUB_SUMMARY_TEMPERATURE,
+            response_format={"type": "json_object"},  # doc14 §3.4.2: 强制合法 JSON
         )
 
         logger.info(

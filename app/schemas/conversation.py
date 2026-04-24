@@ -12,6 +12,7 @@ class ConversationMessageResponse(BaseSchema):
     content_type: str = Field(description="内容类型：text / voice")
     content: str = Field(description="消息文本内容")
     media_file_id: Optional[uuid.UUID] = Field(None, description="语音类型消息的媒体文件 ID")
+    image_url: Optional[str] = Field(None, description="消息附带的图片 URL")
     sequence_number: int = Field(description="消息在会话内的有序序号")
     created_at: datetime = Field(description="消息写入时间")
 
@@ -47,6 +48,7 @@ class SendMessageRequest(BaseSchema):
     content_type: str = Field(..., description="消息内容类型：text / voice")
     content: Optional[str] = Field(None, description="消息文本内容，text类型必填")
     media_file_id: Optional[uuid.UUID] = Field(None, description="媒体文件ID，voice类型必填")
+    image_url: Optional[str] = Field(None, description="已上传图片的访问 URL（可选）")
     # ── Phase 2 新增 ────────────────────────────────────────────
     # 置为 True 时，允许在 completed 会话中继续发送"补充消息"并触发 AI 回复。
     # 默认 False，保持原有行为不变。

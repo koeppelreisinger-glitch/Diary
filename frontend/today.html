@@ -333,8 +333,8 @@
                     class="app-nav-label">今日</span></a>
             <a class="app-nav-item" href="index.html"><span class="app-nav-icon">📖</span><span
                     class="app-nav-label">回忆</span></a>
-            <a class="app-nav-item" href="hope.html"><span class="app-nav-icon">🌱</span><span
-                    class="app-nav-label">希冀</span></a>
+            <a class="app-nav-item" href="trace.html"><span class="app-nav-icon">🔍</span><span
+                    class="app-nav-label">寻迹</span></a>
             <a class="app-nav-item" href="profile.html"><span class="app-nav-icon">👤</span><span
                     class="app-nav-label">我</span></a>
         </nav>
@@ -714,7 +714,9 @@
         function setSt(id, text, type) {
             const el = document.getElementById(id); if (!el) return;
             el.textContent = text;
-            el.className = 'ep-status' + (type ? ' ' + type : '');
+            // 保留元素原始基础 class（ep-status 或 sp-status），不强制覆盖
+            const baseClass = (el.className.split(' ')[0]) || 'ep-status';
+            el.className = baseClass + (type ? ' ' + type : '');
         }
     </script>
 </body>
