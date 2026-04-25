@@ -35,12 +35,13 @@ class DailyRecordService:
     async def _get_today_date(session: AsyncSession, user_id: uuid.UUID) -> datetime.date:
         stmt = select(UserSetting).where(UserSetting.user_id == user_id, UserSetting.deleted_at.is_(None))
         setting = (await session.execute(stmt)).scalar_one_or_none()
-        if not setting or not setting.timezone:
-            raise ErrorResponseAPIException(status_code=500, detail="用户时区配置缺失或非法", code=50002)
+        # 容错：用户无设置或时区为空时，fallback 到 Asia/Shanghai
+        tz_str = (setting.timezone if setting and setting.timezone else None) or "Asia/Shanghai"
         try:
-            return datetime.now(zoneinfo.ZoneInfo(setting.timezone)).date()
+            return datetime.now(zoneinfo.ZoneInfo(tz_str)).date()
         except Exception:
-            raise ErrorResponseAPIException(status_code=500, detail="用户时区配置非法", code=50002)
+            # 时区字符串无效时也 fallback，不 500
+            return datetime.now(zoneinfo.ZoneInfo("Asia/Shanghai")).date()
 
     @staticmethod
     async def _load_record_full(session: AsyncSession, record_id: uuid.UUID) -> DailyRecord | None:
