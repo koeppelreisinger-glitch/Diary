@@ -57,3 +57,6 @@ set_*.py
 setup_*.py
 switch_*.py
 fix_*.py
+scratch_*.py
+migrate_*.py
+test_*.py
