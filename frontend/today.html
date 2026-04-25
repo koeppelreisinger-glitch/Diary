@@ -268,6 +268,36 @@
 
             <div class="date-strip" id="dateStrip"></div>
 
+            <!-- ══ 历史日期内联面板 ══ -->
+            <div id="histPanel" style="display:none;padding:0 16px;margin-bottom:4px">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0 4px">
+                    <span id="histPanelDate" style="font-size:13px;font-weight:600;color:var(--accent)"></span>
+                    <button class="btn btn-ghost btn-sm" onclick="closeHistPanel()"
+                        style="font-size:12px;padding:2px 8px;color:var(--text-muted)">✕ 关闭</button>
+                </div>
+                <div class="ep" style="margin:0 0 8px">
+                    <div class="ep-title">📝 日记正文</div>
+                    <div class="ep-hint" id="histBodyHint">加载中…</div>
+                    <div id="histBodyContent"></div>
+                    <div class="ep-actions" id="histBodyActions"></div>
+                    <div class="ep-status" id="histBodySt"></div>
+                </div>
+                <div class="sp" style="margin:0 0 12px">
+                    <div class="sp-title">💬 继续补充</div>
+                    <div class="sp-msgs" id="histSuppMsgs"></div>
+                    <div class="sp-input-row">
+                        <input class="sp-input" type="text" id="histSuppInput" placeholder="输入补充内容…"
+                            onkeydown="if(event.key==='Enter')histSendSupp()">
+                        <button class="btn btn-primary btn-sm" onclick="histSendSupp()" id="histSuppSendBtn">发送</button>
+                    </div>
+                    <div class="sp-save-row" id="histSuppSaveRow">
+                        <button class="btn btn-primary" style="width:100%;margin-top:8px" onclick="histSaveSupp()"
+                            id="histSuppSaveBtn">✅ 保存本次补充</button>
+                        <div class="sp-status" id="histSuppSt"></div>
+                    </div>
+                </div>
+            </div>
+
             <div class="section-row" style="padding-bottom:0">
                 <div class="section-row-title">我的日记</div>
                 <span class="section-row-action" onclick="location.href='index.html'">查看全部</span>
@@ -429,7 +459,18 @@
                 div.className = 'date-day' + (isToday ? ' today' : '') + (hasRec && !isToday ? ' has-record' : '');
                 div.style.cursor = 'pointer';
                 div.innerHTML = `<span class="date-day-label">${labels[d.getDay()]}</span><span class="date-day-num">${d.getDate()}</span>`;
-                div.addEventListener('click', () => openDiarySheet(dateStr));
+                div.addEventListener('click', () => {
+                    if (isToday) {
+                        // 点今天：滚动到今日内联面板
+                        closeHistPanel();
+                        const panels = document.getElementById('todayInlinePanels');
+                        if (panels && panels.style.display !== 'none') {
+                            panels.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    } else {
+                        openHistPanel(dateStr);
+                    }
+                });
                 strip.appendChild(div);
             }
         }
@@ -442,7 +483,142 @@
         }
 
         // ══════════════════════════════════════════════════════
-        //  底部弹层
+        //  历史日期内联面板
+        // ══════════════════════════════════════════════════════
+        const histState = { record: null, convId: null, dateStr: null };
+
+        async function openHistPanel(dateStr) {
+            histState.record = null; histState.convId = null; histState.dateStr = dateStr;
+            document.getElementById('histPanelDate').textContent = dateStr;
+            document.getElementById('histBodyHint').textContent = '加载中…';
+            document.getElementById('histBodyContent').innerHTML =
+                '<div style="padding:16px 0;text-align:center"><div class="loading-spinner"></div></div>';
+            document.getElementById('histBodyActions').innerHTML = '';
+            setSt('histBodySt', '', '');
+            document.getElementById('histSuppMsgs').innerHTML = '';
+            document.getElementById('histSuppSaveRow').style.display = 'none';
+            setSt('histSuppSt', '', '');
+            document.getElementById('histSuppInput').disabled = true;
+            document.getElementById('histSuppSendBtn').disabled = true;
+
+            const panel = document.getElementById('histPanel');
+            panel.style.display = 'block';
+            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            try {
+                const rec = await apiFetch('/history/daily-records/' + dateStr);
+                histState.record = rec;
+                histState.convId = rec.conversation_id;
+                _renderHistHasRecord(rec);
+            } catch (e) {
+                _renderHistNoRecord();
+            }
+        }
+
+        function closeHistPanel() {
+            document.getElementById('histPanel').style.display = 'none';
+        }
+
+        function _renderHistHasRecord(rec) {
+            document.getElementById('histBodyHint').textContent = '直接编辑，不会触发 AI';
+            document.getElementById('histBodyContent').innerHTML =
+                '<textarea class="ep-textarea" id="histBodyTA" rows="10" placeholder="日记正文内容…">' +
+                escapeHtml(rec.body_text || rec.summary_text || '') + '</textarea>';
+            document.getElementById('histBodyActions').innerHTML =
+                '<button class="btn btn-primary" onclick="histSaveBody()" id="histSaveBodyBtn">💾 保存正文</button>' +
+                '<button class="btn btn-secondary" onclick="histRegenBody()" id="histRegenBtn">🤖 AI 重新生成</button>';
+            document.getElementById('histSuppInput').disabled = false;
+            document.getElementById('histSuppSendBtn').disabled = false;
+            document.getElementById('histSuppInput').placeholder = '输入补充内容…';
+        }
+
+        function _renderHistNoRecord() {
+            document.getElementById('histBodyHint').textContent = '输入正文后保存，即可为这一天创建日记';
+            document.getElementById('histBodyContent').innerHTML =
+                '<textarea class="ep-textarea" id="histBodyTA" rows="10" placeholder="写下这一天发生的事…"></textarea>';
+            document.getElementById('histBodyActions').innerHTML =
+                '<button class="btn btn-primary" onclick="histSaveBody()" id="histSaveBodyBtn">💾 保存正文</button>';
+            document.getElementById('histSuppInput').disabled = true;
+            document.getElementById('histSuppSendBtn').disabled = true;
+            document.getElementById('histSuppInput').placeholder = '请先保存正文，再来补充';
+        }
+
+        async function histSaveBody() {
+            const ta = document.getElementById('histBodyTA');
+            const txt = ta ? ta.value.trim() : '';
+            if (!txt) { setSt('histBodySt', '❌ 正文不能为空', 'err'); return; }
+            const btn = document.getElementById('histSaveBodyBtn');
+            btn.disabled = true; btn.textContent = '保存中…'; setSt('histBodySt', '保存中…', '');
+            try {
+                if (!histState.record) {
+                    const created = await apiFetch('/daily-records/manual', {
+                        method: 'POST',
+                        body: JSON.stringify({ record_date: histState.dateStr, body_text: txt })
+                    });
+                    histState.record = created; histState.convId = created.conversation_id;
+                    _renderHistHasRecord(created);
+                    const newTa = document.getElementById('histBodyTA');
+                    if (newTa && created.body_text) newTa.value = created.body_text;
+                    setSt('histBodySt', '✅ 日记已创建，结构化数据已同步', 'ok');
+                    _recordDates.add(histState.dateStr); buildDateStrip(_recordDates);
+                } else {
+                    await apiFetch('/daily-records/' + histState.record.id + '/body', {
+                        method: 'PUT', body: JSON.stringify({ body_text: txt })
+                    });
+                    setSt('histBodySt', '✅ 已保存', 'ok');
+                }
+            } catch (e) { setSt('histBodySt', '❌ ' + e.message, 'err'); }
+            finally { const b = document.getElementById('histSaveBodyBtn'); if(b){b.disabled=false;b.textContent='💾 保存正文';} }
+        }
+
+        async function histRegenBody() {
+            const r = histState.record; if (!r) return;
+            if (!confirm('确定让 AI 重新生成日记正文？每次会调整叙述风格和修辞。')) return;
+            const btn = document.getElementById('histRegenBtn');
+            btn.disabled = true; btn.textContent = '生成中…'; setSt('histBodySt', 'AI 生成中…', '');
+            try {
+                const updated = await apiFetch('/daily-records/' + r.id + '/supplement', { method: 'POST', body: JSON.stringify({}) });
+                const ta = document.getElementById('histBodyTA');
+                if (ta && updated && updated.body_text) ta.value = updated.body_text;
+                setSt('histBodySt', '✅ 已重新生成', 'ok');
+            } catch (e) { setSt('histBodySt', '❌ ' + e.message, 'err'); }
+            finally { const b = document.getElementById('histRegenBtn'); if(b){b.disabled=false;b.textContent='🤖 AI 重新生成';} }
+        }
+
+        async function histSendSupp() {
+            const convId = histState.convId; const r = histState.record;
+            if (!convId || !r) return;
+            const input = document.getElementById('histSuppInput');
+            const content = input.value.trim(); if (!content) return;
+            const btn = document.getElementById('histSuppSendBtn');
+            btn.disabled = true; btn.textContent = '…'; input.disabled = true;
+            appendMsg('histSuppMsgs', 'user', content); input.value = '';
+            try {
+                const resp = await apiFetch('/conversations/' + convId + '/messages', {
+                    method: 'POST', body: JSON.stringify({ content_type: 'text', content, is_supplement: true })
+                });
+                appendMsg('histSuppMsgs', 'ai', resp.ai_message.content);
+                document.getElementById('histSuppSaveRow').style.display = 'block';
+            } catch (e) { appendMsg('histSuppMsgs', 'system', '发送失败：' + e.message); }
+            finally { btn.disabled=false; btn.textContent='发送'; input.disabled=false; input.focus(); }
+        }
+
+        async function histSaveSupp() {
+            const r = histState.record; if (!r) return;
+            const btn = document.getElementById('histSuppSaveBtn');
+            btn.disabled = true; btn.textContent = '处理中…'; setSt('histSuppSt', '重建日记中…', '');
+            try {
+                const updated = await apiFetch('/daily-records/' + r.id + '/supplement', { method: 'POST', body: JSON.stringify({}) });
+                const ta = document.getElementById('histBodyTA');
+                if (ta && updated && updated.body_text) ta.value = updated.body_text;
+                setSt('histSuppSt', '✅ 补充已保存，日记已更新', 'ok');
+                document.getElementById('histSuppSaveRow').style.display = 'none';
+            } catch (e) { setSt('histSuppSt', '❌ ' + e.message, 'err'); }
+            finally { const b=document.getElementById('histSuppSaveBtn'); if(b){b.disabled=false;b.textContent='✅ 保存本次补充';} }
+        }
+
+        // ══════════════════════════════════════════════════════
+        //  底部弹层（保留备用）
         // ══════════════════════════════════════════════════════
         const sheetState = { record: null, convId: null, dateStr: null };
 
