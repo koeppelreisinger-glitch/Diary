@@ -24,11 +24,18 @@ from app.schemas.media import (
 
 logger = logging.getLogger(__name__)
 
-# 本地存储根目录（项目根/uploads/）
-UPLOADS_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads"
-)
-os.makedirs(UPLOADS_DIR, exist_ok=True)
+# 本地存储根目录：Vercel /var/task 只读，必须用 /tmp；本地开发用项目根/uploads/
+_IS_VERCEL = bool(os.environ.get("VERCEL"))
+if _IS_VERCEL:
+    UPLOADS_DIR = "/tmp/uploads"  # Vercel serverless 唯一可写目录
+else:
+    UPLOADS_DIR = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "uploads"
+    )
+try:
+    os.makedirs(UPLOADS_DIR, exist_ok=True)
+except OSError:
+    pass  # 只读文件系统时跳过（Vercel /tmp 应该始终可写，保险处理）
 
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
@@ -68,14 +75,24 @@ class MediaService:
         ext = mime.split("/")[-1].replace("jpeg", "jpg")
         file_name = f"{uuid.uuid4().hex}.{ext}"
         user_dir = os.path.join(UPLOADS_DIR, str(user_id), str(today))
-        os.makedirs(user_dir, exist_ok=True)
+        try:
+            os.makedirs(user_dir, exist_ok=True)
+        except OSError:
+            pass
         file_path = os.path.join(user_dir, file_name)
 
-        with open(file_path, "wb") as f:
-            f.write(content)
+        # Vercel 环境下 /tmp 不对外提供 HTTP，暂存后 url 留空（后续接入云存储）
+        try:
+            with open(file_path, "wb") as f:
+                f.write(content)
+        except OSError:
+            logger.warning("[MediaService] 无法写入文件系统（Vercel 只读），图片不持久化")
 
         storage_key = f"{user_id}/{today}/{file_name}"
-        url = f"/uploads/{storage_key}"
+        if _IS_VERCEL:
+            url = ""  # Vercel 无持久化本地存储，URL 暂为空（可接入 S3/Cloudinary）
+        else:
+            url = f"/uploads/{storage_key}"
 
         # 查找当天的 DailyRecord（可选绑定）
         daily_record_id = None
