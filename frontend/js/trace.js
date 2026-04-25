@@ -98,7 +98,7 @@ async function loadAll() {
     setLoading('xjExpLoading', false);
     renderExpenses(ok(expenses));
     renderEmotions(ok(emotions), ok(calendar));
-    renderEventStream(ok(events)?.items);
+    renderEventStream(ok(events)?.records);
     renderLocations(ok(locations));
     renderTags(ok(tags));
 }
@@ -122,7 +122,7 @@ function countUp(el, target) {
 
 // ── ① 收支渲染 ─────────────────────────────────────────
 function renderExpenses(data) {
-    const items = data?.items || [];
+    const items = data?.records || [];
     XJ.expData = items;
 
     const emptyEl = document.getElementById('xjExpEmpty');
@@ -221,7 +221,7 @@ function renderEmotions(emotionsData, calData) {
     renderSparkline(days);
 
     // 情绪 chips
-    const items = emotionsData?.items || [];
+    const items = emotionsData?.records || [];
     const chips = document.getElementById('xjEmotionChips');
     if (!chips) return;
 
@@ -324,7 +324,7 @@ function renderEventStream(items) {
 function renderLocations(data) {
     const container = document.getElementById('xjPlaceChips');
     if (!container) return;
-    const items = data?.items || [];
+    const items = data?.records || [];
     if (items.length === 0) {
         container.innerHTML = '<div class="xj-card-empty">📍 还没有地点记录</div>';
         return;
@@ -342,7 +342,7 @@ function renderLocations(data) {
 function renderTags(data) {
     const container = document.getElementById('xjTagCloud');
     if (!container) return;
-    const items = data?.items || [];
+    const items = data?.records || [];
     if (items.length === 0) {
         container.innerHTML = '<div class="xj-card-empty">🏷️ 还没有标签记录</div>';
         return;
