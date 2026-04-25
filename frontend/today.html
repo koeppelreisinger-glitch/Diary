@@ -298,6 +298,31 @@
                 </div>
             </div>
 
+            <!-- 未来日期占位面板 -->
+            <div id="futurePanel" style="display:none;padding:0 16px 16px">
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0 12px">
+                    <span id="futurePanelDate" style="font-size:13px;font-weight:600;color:var(--text-muted)"></span>
+                    <button class="btn btn-ghost btn-sm" onclick="closeFuturePanel()"
+                        style="font-size:12px;padding:2px 8px;color:var(--text-muted)">✕ 关闭</button>
+                </div>
+                <div style="background:linear-gradient(135deg,#f0edff 0%,#fff8ec 50%,#e8f5ff 100%);
+                            border-radius:24px;padding:48px 24px 44px;text-align:center;
+                            border:1px solid rgba(157,143,224,0.18);">
+                    <div style="font-size:52px;margin-bottom:18px;
+                                filter:drop-shadow(0 6px 12px rgba(157,143,224,0.25))">&#x1F320;</div>
+                    <div style="font-size:26px;font-weight:800;
+                                background:linear-gradient(135deg,#9D8FE0,#F5A623);
+                                -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                                margin-bottom:14px;letter-spacing:0.05em">未来可期</div>
+                    <div style="font-size:14px;color:var(--text-muted);line-height:2;
+                                max-width:240px;margin:0 auto">
+                        这一天还未到来<br>
+                        让每个当下成为美好的伏笔
+                    </div>
+                </div>
+            </div>
+
+            <div id="todayMainContent">
             <div class="section-row" style="padding-bottom:0">
                 <div class="section-row-title">我的日记</div>
                 <span class="section-row-action" onclick="location.href='index.html'">查看全部</span>
@@ -356,7 +381,7 @@
                     <span class="quick-chip-tag">开始写</span>
                 </div>
             </div>
-        </div>
+            </div><!-- /todayMainContent -->
 
         <nav class="app-bottom-nav">
             <a class="app-nav-item active" href="today.html"><span class="app-nav-icon">✍️</span><span
@@ -461,12 +486,14 @@
                 div.innerHTML = `<span class="date-day-label">${labels[d.getDay()]}</span><span class="date-day-num">${d.getDate()}</span>`;
                 div.addEventListener('click', () => {
                     if (isToday) {
-                        // 点今天：滚动到今日内联面板
-                        closeHistPanel();
+                        // 点今天：关闭历史/未来面板，恢复主内容
+                        closeHistPanel(); closeFuturePanel();
                         const panels = document.getElementById('todayInlinePanels');
                         if (panels && panels.style.display !== 'none') {
                             panels.scrollIntoView({ behavior: 'smooth', block: 'start' });
                         }
+                    } else if (dateStr > todayStr) {
+                        openFuturePanel(dateStr);
                     } else {
                         openHistPanel(dateStr);
                     }
@@ -488,6 +515,7 @@
         const histState = { record: null, convId: null, dateStr: null };
 
         async function openHistPanel(dateStr) {
+            closeFuturePanel();
             histState.record = null; histState.convId = null; histState.dateStr = dateStr;
             document.getElementById('histPanelDate').textContent = dateStr;
             document.getElementById('histBodyHint').textContent = '加载中…';
@@ -503,6 +531,8 @@
 
             const panel = document.getElementById('histPanel');
             panel.style.display = 'block';
+            // 隐藏主内容
+            document.getElementById('todayMainContent').style.display = 'none';
             panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
             try {
@@ -517,6 +547,20 @@
 
         function closeHistPanel() {
             document.getElementById('histPanel').style.display = 'none';
+            document.getElementById('todayMainContent').style.display = 'block';
+        }
+
+        function openFuturePanel(dateStr) {
+            closeHistPanel();
+            document.getElementById('futurePanelDate').textContent = dateStr;
+            document.getElementById('futurePanel').style.display = 'block';
+            document.getElementById('todayMainContent').style.display = 'none';
+            document.getElementById('futurePanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function closeFuturePanel() {
+            document.getElementById('futurePanel').style.display = 'none';
+            document.getElementById('todayMainContent').style.display = 'block';
         }
 
         function _renderHistHasRecord(rec) {
