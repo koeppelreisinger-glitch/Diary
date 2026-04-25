@@ -6,6 +6,9 @@ from fastapi.staticfiles import StaticFiles
 import logging
 import os
 
+# 必须在所有 ORM 操作前导入全部 Model，否则 relationship 里的字符串引用会解析失败
+import app.models  # noqa: F401
+
 logger = logging.getLogger(__name__)
 
 from app.core.config import settings

@@ -1,8 +1,9 @@
 import urllib.request
 import json
 import sys
+import os
 
-TOKEN = "REDACTED"
+TOKEN = os.environ.get("VERCEL_TOKEN", "")  # 从环境变量读取，不要硬编码
 TEAM_ID = "team_Oaa6g9KqqLsjebA5V4w1qa1H"
 PROJECT_ID = "diary"
 
