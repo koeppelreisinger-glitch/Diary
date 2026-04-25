@@ -107,16 +107,13 @@ function renderStateCompleted() {
     const stage = document.getElementById('todayStage');
     const recordDate = todayPageState.todayRecord?.record_date || todayPageState.conversation?.record_date || '今天';
 
+    // 仅显示一行小提示，主要内容交给日记正文/补充面板
     stage.innerHTML = `
-        <div class="state-card" style="padding:0 16px 0">
-            <div class="state-card__body">
-                <p class="state-card__eyebrow">今日记录完成 ✨</p>
-                <div class="state-card__title">今天的记录已完成</div>
-                <p class="state-card__text">记录日期：${escapeHtml(recordDate)}</p>
-                <div class="state-card__actions">
-                    <button class="btn btn-secondary" onclick="refreshTodayPage()">刷新状态</button>
-                </div>
-            </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding:6px 4px 10px;color:var(--text-muted);font-size:13px">
+            <span>✨ 今日记录完成 · ${escapeHtml(recordDate)}</span>
+            <button class="btn btn-ghost btn-sm" onclick="refreshTodayPage()"
+                    style="font-size:12px;padding:2px 8px;color:var(--text-muted)">刷新</button>
         </div>
     `;
 

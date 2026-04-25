@@ -281,7 +281,7 @@
                 <div class="ep">
                     <div class="ep-title">📝 日记正文</div>
                     <div class="ep-hint">直接编辑，不会触发 AI</div>
-                    <textarea class="ep-textarea" id="todayBodyTA" rows="8" placeholder="日记正文内容..."></textarea>
+                    <textarea class="ep-textarea" id="todayBodyTA" rows="12" placeholder="日记正文内容..."></textarea>
                     <div class="ep-actions">
                         <button class="btn btn-primary" onclick="todaySaveBody()" id="todaySaveBodyBtn">💾 保存正文</button>
                         <button class="btn btn-secondary" onclick="todayRegenBody()" id="todayRegenBtn">🤖 AI
@@ -306,10 +306,10 @@
                 </div>
             </div>
 
-            <div class="section-row" style="padding-top:8px">
+            <div class="section-row" style="padding-top:8px" id="quickRecordSection">
                 <div class="section-row-title">快速记录</div>
             </div>
-            <div class="quick-chips">
+            <div class="quick-chips" id="quickRecordChips">
                 <div class="quick-chip quick-chip-1" onclick="scrollToJournal()">
                     <div class="quick-chip-title">感恩一刻 🌿</div>
                     <div class="quick-chip-desc">今天有什么让你感到开心？</div>
@@ -633,6 +633,11 @@
                 suppInput.disabled = true; suppSendBtn.disabled = true;
                 suppInput.placeholder = '请先完成今日记录';
             }
+            // 隐藏「快速记录」板块
+            const qSec = document.getElementById('quickRecordSection');
+            const qChips = document.getElementById('quickRecordChips');
+            if (qSec) qSec.style.display = 'none';
+            if (qChips) qChips.style.display = 'none';
             document.getElementById('todayInlinePanels').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 

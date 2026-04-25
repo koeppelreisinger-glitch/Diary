@@ -1299,7 +1299,7 @@ body.mobile-page .mobile-stage .state-card__actions .btn {
 
 .chat-message-user {
   align-self: flex-end;
-  text-align: right;
+  text-align: left;
 }
 
 .chat-message-ai {
