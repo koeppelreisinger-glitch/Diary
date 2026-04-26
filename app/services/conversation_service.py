@@ -21,6 +21,7 @@ from app.schemas.conversation import (
     SendMessageResponse,
     CompleteConversationResponse,
 )
+from app.core.config import settings
 from app.core.exceptions import ErrorResponseAPIException, NotFoundException, ForbiddenException, ConflictException
 
 logger = logging.getLogger(__name__)
@@ -87,63 +88,71 @@ class ConversationService:
 
     @staticmethod
     async def create_today_conversation(session: AsyncSession, user_id: uuid.UUID) -> CreateConversationResponse:
-        today_date = await ConversationService._get_today_date(session, user_id)
-
-        # 1. 优先检查今日是否已有会话（幂等性保护，避免 IntegrityError 导致的 500）
-        stmt_check = select(Conversation).where(
-            Conversation.user_id == user_id,
-            Conversation.record_date == today_date,
-            Conversation.deleted_at.is_(None)
-        )
-        existing_conv = (await session.execute(stmt_check)).scalar_one_or_none()
-        if existing_conv:
-            return CreateConversationResponse(
-                id=existing_conv.id,
-                status=existing_conv.status,
-                record_date=existing_conv.record_date,
-                created_at=existing_conv.created_at
-            )
-
-        # 2. 正常创建逻辑
-        new_conv = Conversation(
-            user_id=user_id,
-            record_date=today_date,
-            status="recording"
-        )
-        session.add(new_conv)
-
-        # ── 预加载指令 ──────────────────────────────────────────────────
-        from app.core.config import settings
-        system_msg = ConversationMessage(
-            conversation_id=new_conv.id,
-            role="system",
-            content_type="text",
-            content=settings.TOKENHUB_CHAT_SYSTEM_PROMPT,
-            sequence_number=0
-        )
-        session.add(system_msg)
-
         try:
+            today_date = await ConversationService._get_today_date(session, user_id)
+
+            # 1. 优先检查今日是否已有会话
+            stmt_check = select(Conversation).where(
+                Conversation.user_id == user_id,
+                Conversation.record_date == today_date,
+                Conversation.deleted_at.is_(None)
+            )
+            existing_conv = (await session.execute(stmt_check)).scalar_one_or_none()
+            if existing_conv:
+                return CreateConversationResponse(
+                    id=existing_conv.id,
+                    status=existing_conv.status,
+                    record_date=existing_conv.record_date,
+                    created_at=existing_conv.created_at
+                )
+
+            # 2. 正常创建逻辑
+            new_id = uuid.uuid4()
+            new_conv = Conversation(
+                id=new_id,
+                user_id=user_id,
+                record_date=today_date,
+                status="recording"
+            )
+            session.add(new_conv)
+
+            # ── 预加载指令 ──────────────────────────────────────────────────
+            system_msg = ConversationMessage(
+                conversation_id=new_id,
+                role="system",
+                content_type="text",
+                content=settings.TOKENHUB_CHAT_SYSTEM_PROMPT,
+                sequence_number=0
+            )
+            session.add(system_msg)
+
             await session.commit()
-            await session.refresh(new_conv)
+            
+            # 返回时手动构造响应，避免 refresh 可能带来的状态不一致
+            return CreateConversationResponse(
+                id=new_id,
+                status="recording",
+                record_date=today_date,
+                created_at=utc_now()  # 近似值，保证符合 schema
+            )
         except IntegrityError:
-            # 极低概率的并发穿透：回滚并再次查询
             await session.rollback()
-            result = await session.execute(stmt_check)
-            existing_conv = result.scalar_one()
+            # 并发情况下再次查询
+            stmt_check = select(Conversation).where(
+                Conversation.user_id == user_id,
+                Conversation.record_date == today_date,
+                Conversation.deleted_at.is_(None)
+            )
+            existing_conv = (await session.execute(stmt_check)).scalar_one()
             return CreateConversationResponse(
                 id=existing_conv.id,
                 status=existing_conv.status,
                 record_date=existing_conv.record_date,
                 created_at=existing_conv.created_at
             )
-
-        return CreateConversationResponse(
-            id=new_conv.id,
-            status=new_conv.status,
-            record_date=new_conv.record_date,
-            created_at=new_conv.created_at
-        )
+        except Exception as e:
+            logger.exception(f"create_today_conversation failed: {e}")
+            raise ErrorResponseAPIException(status_code=500, detail=f"内部错误: {str(e)}", code=50001)
 
     @staticmethod
     async def _get_conversation_secured(session: AsyncSession, conversation_id: uuid.UUID, user_id: uuid.UUID) -> Conversation:
