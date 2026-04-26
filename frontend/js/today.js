@@ -101,6 +101,7 @@ function renderTodayNotice(text, type = '') {
 }
 
 function renderStateNotStarted() {
+    setMainSectionsVisibility(true);
     const stage = document.getElementById('todayStage');
     stage.innerHTML = `
         <div class="state-card">
@@ -117,6 +118,7 @@ function renderStateNotStarted() {
 }
 
 function renderStateGenerating() {
+    setMainSectionsVisibility(true);
     const stage = document.getElementById('todayStage');
     stage.innerHTML = `
         <div class="state-card">
@@ -133,6 +135,7 @@ function renderStateGenerating() {
 }
 
 function renderStateCompleted() {
+    setMainSectionsVisibility(true);
     const stage = document.getElementById('todayStage');
     const recordDate = todayPageState.todayRecord?.record_date || todayPageState.conversation?.record_date || '今天';
 
@@ -153,6 +156,7 @@ function renderStateCompleted() {
 }
 
 function renderStateRecording() {
+    setMainSectionsVisibility(false);
     const stage = document.getElementById('todayStage');
     const conversation = todayPageState.conversation;
     const messages = todayPageState.messages;
@@ -418,4 +422,24 @@ async function openQuickRecord(mode) {
             if (input) input.focus();
         }
     }, 100);
+}
+
+/** 辅助函数：控制主页面其它板块的可见性 */
+function setMainSectionsVisibility(visible) {
+    const myDiary = document.getElementById('myDiarySection');
+    const quickTitle = document.getElementById('quickRecordSection');
+    const quickChips = document.getElementById('quickRecordChips');
+    const inlinePanels = document.getElementById('todayInlinePanels');
+
+    const display = visible ? '' : 'none';
+    if (myDiary) myDiary.style.display = display;
+    if (quickTitle) quickTitle.style.display = display;
+    if (quickChips) {
+        // 快速记录 Chips 是 Grid 布局
+        quickChips.style.display = visible ? 'grid' : 'none';
+    }
+    // 内联编辑面板通常在 Completed 状态下由外部逻辑显示，这里我们确保它在 Recording 时隐藏
+    if (!visible && inlinePanels) {
+        inlinePanels.style.display = 'none';
+    }
 }
