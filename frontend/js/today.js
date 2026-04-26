@@ -230,12 +230,6 @@ function renderStateRecording() {
     }
 }
 
-    const messagesEl = document.getElementById('chatMessages');
-    if (messagesEl) {
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-    }
-}
-
 function renderTodayMessages(messages) {
     if (!messages.length) {
         return `

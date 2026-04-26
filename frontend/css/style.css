@@ -3400,6 +3400,8 @@ body.mobile-page--login .login-card {
   font-size: 13px;
   font-weight: 500;
   transition: transform 0.15s ease;
+}
+
 /* ── Chat Layout Mode Themes ── */
 .chat-layout.theme-expense {
   --chat-accent: #F5A623;
