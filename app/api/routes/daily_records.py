@@ -94,7 +94,7 @@ async def save_supplement(
 
 from sqlalchemy import select
 from app.models.conversation import Conversation
-from app.models.daily_record import DailyRecord, RecordTag, RecordEvent, RecordEmotion, RecordExpense, RecordLocation
+from app.models.daily_record import DailyRecord, RecordInspiration, RecordEvent, RecordEmotion, RecordExpense, RecordLocation
 from app.models.base import utc_now
 
 
@@ -133,7 +133,7 @@ async def dev_mock_generate_summary(
         RecordEmotion(record_id=dr.id, user_id=current_user.id, emotion_label="兴奋", intensity=5, source="ai"),
         RecordExpense(record_id=dr.id, user_id=current_user.id, amount=12.5, category="餐饮", source="ai"),
         RecordLocation(record_id=dr.id, user_id=current_user.id, name="静安寺附近", source="ai"),
-        RecordTag(record_id=dr.id, user_id=current_user.id, tag_name="开发中", source="ai")
+        RecordInspiration(record_id=dr.id, user_id=current_user.id, content="开发中", source="ai")
     ])
 
     conv.status = "completed"

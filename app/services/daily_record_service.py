@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 
 from app.models.user_setting import UserSetting
 from app.models.conversation import Conversation, ConversationMessage
-from app.models.daily_record import DailyRecord, RecordTag
+from app.models.daily_record import DailyRecord, RecordInspiration
 from app.models.base import utc_now
 from app.schemas.daily_record import (
     TodayDailyRecordResponse,
@@ -28,7 +28,7 @@ class DailyRecordService:
         record.emotions = [item for item in record.emotions if item.deleted_at is None]
         record.expenses = [item for item in record.expenses if item.deleted_at is None]
         record.locations = [item for item in record.locations if item.deleted_at is None]
-        record.tags = [item for item in record.tags if item.deleted_at is None]
+        record.inspirations = [item for item in record.inspirations if item.deleted_at is None]
         return record
 
     @staticmethod
@@ -54,7 +54,7 @@ class DailyRecordService:
                 selectinload(DailyRecord.emotions),
                 selectinload(DailyRecord.expenses),
                 selectinload(DailyRecord.locations),
-                selectinload(DailyRecord.tags),
+                selectinload(DailyRecord.inspirations),
             )
         )
         return (await session.execute(stmt)).scalar_one_or_none()
@@ -70,7 +70,7 @@ class DailyRecordService:
             selectinload(DailyRecord.emotions),
             selectinload(DailyRecord.expenses),
             selectinload(DailyRecord.locations),
-            selectinload(DailyRecord.tags)
+            selectinload(DailyRecord.inspirations)
         )
         record = (await session.execute(stmt)).scalar_one_or_none()
         if not record:
@@ -132,42 +132,42 @@ class DailyRecordService:
             record.keywords = data["keywords"] or []
             updated = True
 
-        if "tags_to_add" in data and data["tags_to_add"]:
-            normalized_names = []
-            for raw_name in data["tags_to_add"]:
-                if raw_name is None:
+        if "inspirations_to_add" in data and data["inspirations_to_add"]:
+            normalized_contents = []
+            for raw_content in data["inspirations_to_add"]:
+                if raw_content is None:
                     continue
-                name = raw_name.strip()
-                if not name:
+                content = raw_content.strip()
+                if not content:
                     continue
-                normalized_names.append(name)
+                normalized_contents.append(content)
 
-            normalized_names = list(dict.fromkeys(normalized_names))
-            existing_names = {
-                t.tag_name for t in record.tags if t.deleted_at is None
+            normalized_contents = list(dict.fromkeys(normalized_contents))
+            existing_contents = {
+                i.content for i in record.inspirations if i.deleted_at is None
             }
-            for tag_name in normalized_names:
-                if tag_name in existing_names:
+            for content in normalized_contents:
+                if content in existing_contents:
                     continue
-                new_tag = RecordTag(
+                new_inspiration = RecordInspiration(
                     record_id=record.id,
                     user_id=user_id,
-                    tag_name=tag_name,
+                    content=content,
                     source="user"
                 )
-                session.add(new_tag)
+                session.add(new_inspiration)
                 updated = True
 
-        if "tags_to_remove" in data and data["tags_to_remove"]:
-            rm_stmt = select(RecordTag).where(
-                RecordTag.id.in_(data["tags_to_remove"]),
-                RecordTag.record_id == record.id,
-                RecordTag.user_id == user_id,
-                RecordTag.deleted_at.is_(None)
+        if "inspirations_to_remove" in data and data["inspirations_to_remove"]:
+            rm_stmt = select(RecordInspiration).where(
+                RecordInspiration.id.in_(data["inspirations_to_remove"]),
+                RecordInspiration.record_id == record.id,
+                RecordInspiration.user_id == user_id,
+                RecordInspiration.deleted_at.is_(None)
             )
-            tags_to_del = (await session.execute(rm_stmt)).scalars().all()
-            for t in tags_to_del:
-                t.deleted_at = utc_now()
+            inspirations_to_del = (await session.execute(rm_stmt)).scalars().all()
+            for i in inspirations_to_del:
+                i.deleted_at = utc_now()
                 updated = True
 
         if updated:
@@ -176,7 +176,7 @@ class DailyRecordService:
                 await session.commit()
             except IntegrityError:
                 await session.rollback()
-                raise ErrorResponseAPIException(status_code=400, detail="数据约束冲突，请检查标签是否重复", code=40000)
+                raise ErrorResponseAPIException(status_code=400, detail="数据约束冲突，请检查灵感是否重复", code=40000)
 
         updated_record = await DailyRecordService._get_record_by_date(session, user_id, record.record_date)
         return updated_record

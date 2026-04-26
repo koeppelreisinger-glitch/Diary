@@ -2,7 +2,7 @@ from app.models.base import Base
 from app.models.user import User
 from app.models.user_setting import UserSetting
 from app.models.conversation import Conversation, ConversationMessage
-from app.models.daily_record import DailyRecord, RecordEvent, RecordEmotion, RecordExpense, RecordLocation, RecordTag
+from app.models.daily_record import DailyRecord, RecordEvent, RecordEmotion, RecordExpense, RecordLocation, RecordInspiration
 from app.models.media import DailyRecordImage
 
 __all__ = [
@@ -16,6 +16,6 @@ __all__ = [
     "RecordEmotion",
     "RecordExpense",
     "RecordLocation",
-    "RecordTag",
+    "RecordInspiration",
     "DailyRecordImage",
 ]

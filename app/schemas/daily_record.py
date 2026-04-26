@@ -42,9 +42,9 @@ class RecordLocationResponse(BaseSchema):
     created_at: datetime
 
 
-class RecordTagResponse(BaseSchema):
+class RecordInspirationResponse(BaseSchema):
     id: uuid.UUID
-    tag_name: str
+    content: str
     source: str
     created_at: datetime
 
@@ -62,7 +62,7 @@ class DailyRecordDetailResponse(BaseSchema):
     emotions: List[RecordEmotionResponse]
     expenses: List[RecordExpenseResponse]
     locations: List[RecordLocationResponse]
-    tags: List[RecordTagResponse]
+    inspirations: List[RecordInspirationResponse]
     created_at: datetime
     updated_at: datetime
 
@@ -77,8 +77,8 @@ class TodayDailyRecordResponse(BaseSchema):
 class UpdateDailyRecordRequest(BaseSchema):
     user_note: Optional[str] = Field(None, description="用户备注；显式传入 null 可清空；未传则保持不变")
     keywords: Optional[List[str]] = Field(None, description="关键词字符串数组；整体覆盖现有值")
-    tags_to_add: Optional[List[str]] = Field(None, description="新增的标签名列表；新增前会 strip()，空字符串标签会被忽略")
-    tags_to_remove: Optional[List[uuid.UUID]] = Field(None, description="需移除的标签 ID 列表")
+    inspirations_to_add: Optional[List[str]] = Field(None, description="新增的灵感内容列表；新增前会 strip()，空字符串会被忽略")
+    inspirations_to_remove: Optional[List[uuid.UUID]] = Field(None, description="需移除的灵感记录 ID 列表")
 
 
 # ── Phase 1：手动改正文请求模型 ───────────────────────────

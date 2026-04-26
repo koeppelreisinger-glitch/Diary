@@ -23,7 +23,7 @@ from app.models.daily_record import (
     RecordEvent,
     RecordExpense,
     RecordLocation,
-    RecordTag,
+    RecordInspiration,
 )
 from app.services.diary_ai_service import DiaryAIService
 
@@ -126,12 +126,12 @@ class SummaryGenerationService:
                     )
                 )
 
-            for tag in payload["tags"]:
+            for inspiration in payload["inspirations"]:
                 db.add(
-                    RecordTag(
+                    RecordInspiration(
                         record_id=new_record.id,
                         user_id=user_id,
-                        tag_name=tag["tag_name"],
+                        content=inspiration["content"],
                         source="ai",
                     )
                 )
@@ -156,7 +156,7 @@ class SummaryGenerationService:
                 selectinload(DailyRecord.emotions),
                 selectinload(DailyRecord.expenses),
                 selectinload(DailyRecord.locations),
-                selectinload(DailyRecord.tags),
+                selectinload(DailyRecord.inspirations),
             )
         )
         return (await db.execute(stmt_full)).scalar_one()

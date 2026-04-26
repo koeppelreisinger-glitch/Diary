@@ -10,7 +10,7 @@ from app.schemas.history import (
     HistoryCalendarResponse,
     HistoryTimelineResponse,
     HistoryEventListResponse,
-    HistoryTagListResponse,
+    HistoryInspirationListResponse,
     HistoryEmotionListResponse,
     HistoryLocationListResponse,
     HistoryExpenseListResponse,
@@ -67,7 +67,7 @@ async def get_history_daily_records(
     start_date: Optional[str] = Query(None, description="起始日期，支持 YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD / YYYYMMDD"),
     end_date: Optional[str] = Query(None, description="结束日期，支持 YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD / YYYYMMDD"),
     keyword: Optional[str] = Query(None, description="关键词模糊匹配(仅在 summary_text 中)"),
-    tag: Optional[str] = Query(None, description="按有效标签名精准筛选"),
+    tag: Optional[str] = Query(None, description="按有效灵感精准筛选"),
     min_emotion_score: Optional[int] = Query(None, description="最低情绪分"),
     max_emotion_score: Optional[int] = Query(None, description="最高情绪分")
 ):
@@ -85,7 +85,7 @@ async def get_history_daily_records(
         start_date=start_date,
         end_date=end_date,
         keyword=keyword,
-        tag=tag,
+        inspiration=tag,
         min_emotion_score=min_emotion_score,
         max_emotion_score=max_emotion_score
     )
@@ -201,34 +201,33 @@ async def get_history_events(
 
 
 # ──────────────────────────────────────────────
-# 五表主视图 — tags
+# 五表主视图 — inspirations
 # ──────────────────────────────────────────────
 
-@router.get("/tags", response_model=ApiResponse[HistoryTagListResponse])
-async def get_history_tags(
+@router.get("/inspirations", response_model=ApiResponse[HistoryInspirationListResponse])
+async def get_history_inspirations(
     session: SessionDep,
     current_user: CurrentUser,
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
     start_date: Optional[str] = Query(None, description="起始日期，支持 YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD / YYYYMMDD"),
     end_date: Optional[str] = Query(None, description="结束日期，支持 YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD / YYYYMMDD"),
-    tag_name: Optional[str] = Query(None, description="按标签名精准筛选（自动去除首尾空白）")
+    keyword: Optional[str] = Query(None, description="按内容模糊筛选")
 ):
     """
-    跨日标签表格接口，用于记录主页下半区"标签"表格。
-    每条记录包含 record_date 和 daily_record_id，前端可跳转至历史详情页。
+    跨日灵感表格接口。
     """
     start_date = _parse_api_date(start_date, "start_date")
     end_date = _parse_api_date(end_date, "end_date")
 
-    result = await HistoryService.list_tags(
+    result = await HistoryService.list_inspirations(
         session=session,
         user_id=current_user.id,
         page=page,
         page_size=page_size,
         start_date=start_date,
         end_date=end_date,
-        tag_name=tag_name
+        keyword=keyword
     )
     return ApiResponse(data=result)
 

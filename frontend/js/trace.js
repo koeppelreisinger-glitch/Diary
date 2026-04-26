@@ -85,13 +85,13 @@ async function loadAll() {
     setHtml('xjPlaceChips', '<div class="xj-card-loading">加载中…</div>');
     setHtml('xjTagCloud', '<div class="xj-card-loading">加载中…</div>');
 
-    const [expenses, emotions, events, locations, tags, calendar] =
+    const [expenses, emotions, events, locations, inspirations, calendar] =
         await Promise.allSettled([
             apiFetch(`/history/expenses?${qs}`),
             apiFetch(`/history/emotions?${qs}`),
             apiFetch(`/history/events?${qs}`),
             apiFetch(`/history/locations?${qs}`),
-            apiFetch(`/history/tags?${qs}`),
+            apiFetch(`/history/inspirations?${qs}`),
             apiFetch(`/history/calendar?${calQs}`)
         ]);
 
@@ -100,7 +100,7 @@ async function loadAll() {
     renderEmotions(ok(emotions), ok(calendar));
     renderEventStream(ok(events)?.records);
     renderLocations(ok(locations));
-    renderTags(ok(tags));
+    renderInspirations(ok(inspirations));
 }
 
 const ok = r => r.status === 'fulfilled' ? r.value : null;
@@ -338,24 +338,20 @@ function renderLocations(data) {
     ).join('');
 }
 
-// ── ⑤ 标签云渲染 ─────────────────────────────────────────
-function renderTags(data) {
+// ── ⑤ 灵感渲染 ─────────────────────────────────────────
+function renderInspirations(data) {
     const container = document.getElementById('xjTagCloud');
     if (!container) return;
     const items = data?.records || [];
     if (items.length === 0) {
-        container.innerHTML = '<div class="xj-card-empty">🏷️ 还没有标签记录</div>';
+        container.innerHTML = '<div class="xj-card-empty">💡 还没有灵感记录</div>';
         return;
     }
-    const countMap = {};
-    items.forEach(t => { const n = t.tag_name || ''; if (n) countMap[n] = (countMap[n] || 0) + 1; });
-    const sorted = Object.entries(countMap).sort((a, b) => b[1] - a[1]);
-    const maxC = sorted[0]?.[1] || 1;
-    container.innerHTML = sorted.slice(0, 20).map(([name, count]) => {
-        const size = 12 + Math.round((count / maxC) * 9);
-        const opacity = 0.6 + (count / maxC) * 0.4;
-        return `<a class="xj-tag-item" href="index.html?tag=${encodeURIComponent(name)}"
-            style="font-size:${size}px;opacity:${opacity}">${escapeHtml(name)}</a>`;
+    // 灵感通常是句子，不适合做词云去重，直接展示最近的灵感气泡
+    container.innerHTML = items.slice(0, 15).map(i => {
+        return `<div class="xj-tag-item" style="font-size:13px; opacity:0.9; margin: 4px; padding: 6px 12px; background: rgba(255,127,80,0.1); border-radius:12px; border: 1px solid rgba(255,127,80,0.2); color: #FF7F50; cursor: default">
+            ${escapeHtml(i.content)}
+        </div>`;
     }).join('');
 }
 

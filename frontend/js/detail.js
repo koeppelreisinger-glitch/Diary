@@ -6,9 +6,9 @@
 let detailData = null;
 let searchTimer = null;
 
-// 待删除标签 ID 集合（保存前暂存，不立即调用接口）
+// 待删除灵感 ID 集合（保存前暂存，不立即调用接口）
 const editState = {
-    pendingDeleteTagIds: new Set(),
+    pendingDeleteInspirationIds: new Set(),
 };
 
 // ── 初始化 ──────────────────────────────
@@ -92,9 +92,9 @@ function renderFullDetail(data, query) {
         e => `<span class="detail-item-main">${hl(e.name)}</span> ${sourceTag(e.source)} ${confirmedIcon(e.is_user_confirmed)}`
     );
 
-    const tagsHtml = renderDetailSection('🏷️ 标签', data.tags || [], query,
-        e => matchesQuery(e.tag_name, query),
-        e => `<span class="keyword-tag">${hl(e.tag_name)}</span> ${sourceTag(e.source)}`
+    const inspirationsHtml = renderDetailSection('💡 灵感', data.inspirations || [], query,
+        e => matchesQuery(e.content, query),
+        e => `<span class="keyword-tag">${hl(e.content)}</span> ${sourceTag(e.source)}`
     );
 
     container.innerHTML = `
@@ -121,7 +121,7 @@ function renderFullDetail(data, query) {
         ${emotionsHtml}
         ${expensesHtml}
         ${locationsHtml}
-        ${tagsHtml}
+        ${inspirationsHtml}
     `;
 }
 
@@ -196,41 +196,41 @@ function renderEditPanel(data) {
 
     document.getElementById('edit-note').value = data.user_note || '';
     document.getElementById('edit-keywords').value = (data.keywords || []).join(', ');
-    editState.pendingDeleteTagIds.clear();
+    editState.pendingDeleteInspirationIds.clear();
     document.getElementById('edit-tags-add').value = '';
-    renderCurrentTags(data.tags || []);
+    renderCurrentInspirations(data.inspirations || []);
 
     const statusEl = document.getElementById('edit-status');
     if (statusEl) { statusEl.textContent = ''; statusEl.className = 'edit-status'; }
 }
 
-/** 渲染"当前标签"区，含待删划线视觉 */
-function renderCurrentTags(tags) {
+/** 渲染"当前灵感"区，含待删划线视觉 */
+function renderCurrentInspirations(inspirations) {
     const container = document.getElementById('edit-tags-current');
     if (!container) return;
-    if (tags.length === 0) {
-        container.innerHTML = '<span class="detail-empty">暂无标签</span>';
+    if (inspirations.length === 0) {
+        container.innerHTML = '<span class="detail-empty">暂无灵感</span>';
         return;
     }
-    container.innerHTML = tags.map(tag => {
-        const isPending = editState.pendingDeleteTagIds.has(String(tag.id));
+    container.innerHTML = inspirations.map(ins => {
+        const isPending = editState.pendingDeleteInspirationIds.has(String(ins.id));
         return `<span class="edit-tag ${isPending ? 'edit-tag-pending' : ''}">
-            ${escapeHtml(tag.tag_name)}
-            <button class="edit-tag-del" onclick="toggleTagDelete('${tag.id}')"
+            ${escapeHtml(ins.content)}
+            <button class="edit-tag-del" onclick="toggleInspirationDelete('${ins.id}')"
                 title="${isPending ? '撤销删除' : '标记为待删除'}">${isPending ? '↩' : '×'}</button>
         </span>`;
     }).join('');
 }
 
-/** 切换某标签的待删状态（不立刻调接口，仅本地标记） */
-function toggleTagDelete(tagId) {
-    const id = String(tagId);
-    if (editState.pendingDeleteTagIds.has(id)) {
-        editState.pendingDeleteTagIds.delete(id);
+/** 切换某灵感的待删状态（不立刻调接口，仅本地标记） */
+function toggleInspirationDelete(insId) {
+    const id = String(insId);
+    if (editState.pendingDeleteInspirationIds.has(id)) {
+        editState.pendingDeleteInspirationIds.delete(id);
     } else {
-        editState.pendingDeleteTagIds.add(id);
+        editState.pendingDeleteInspirationIds.add(id);
     }
-    renderCurrentTags(detailData ? detailData.tags || [] : []);
+    renderCurrentInspirations(detailData ? detailData.inspirations || [] : []);
 }
 
 /** 保存修改：收集表单 → PUT /daily-records/{id} → 重新加载 */
@@ -248,22 +248,22 @@ async function saveEdits() {
     const keywords = document.getElementById('edit-keywords').value
         .split(',').map(k => k.trim()).filter(k => k.length > 0);
 
-    // tags_to_add：去重 + 过滤与现有未删标签重复的
-    const existingActiveTagNames = (detailData.tags || [])
-        .filter(t => !editState.pendingDeleteTagIds.has(String(t.id)))
-        .map(t => t.tag_name.toLowerCase());
+    // inspirations_to_add：去重 + 过滤与现有未删标签重复的
+    const existingActiveInspirationContents = (detailData.inspirations || [])
+        .filter(i => !editState.pendingDeleteInspirationIds.has(String(i.id)))
+        .map(i => i.content.toLowerCase());
 
     const rawNew = document.getElementById('edit-tags-add').value
         .split(',').map(t => t.trim()).filter(t => t.length > 0);
-    const tagsToAdd = [...new Set(rawNew)].filter(
-        t => !existingActiveTagNames.includes(t.toLowerCase())
+    const inspirationsToAdd = [...new Set(rawNew)].filter(
+        t => !existingActiveInspirationContents.includes(t.toLowerCase())
     );
 
     const body = {
         user_note: userNote,
         keywords: keywords,
-        tags_to_add: tagsToAdd,
-        tags_to_remove: [...editState.pendingDeleteTagIds],
+        inspirations_to_add: inspirationsToAdd,
+        inspirations_to_remove: [...editState.pendingDeleteInspirationIds],
     };
 
     try {

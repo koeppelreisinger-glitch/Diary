@@ -15,7 +15,7 @@ from app.models.daily_record import (
     RecordEvent,
     RecordExpense,
     RecordLocation,
-    RecordTag,
+    RecordInspiration,
 )
 from app.services.summary_generation_service import SummaryGenerationService
 
@@ -83,7 +83,7 @@ class DiaryRebuildService:
                 selectinload(DailyRecord.emotions),
                 selectinload(DailyRecord.expenses),
                 selectinload(DailyRecord.locations),
-                selectinload(DailyRecord.tags),
+                selectinload(DailyRecord.inspirations),
             )
         )
         return (await db.execute(stmt)).scalar_one()
@@ -108,7 +108,7 @@ class DiaryRebuildService:
         }
         record.updated_at = now
 
-        await db.refresh(record, ["events", "emotions", "expenses", "locations", "tags"])
+        await db.refresh(record, ["events", "emotions", "expenses", "locations", "inspirations"])
 
         for event in record.events:
             if event.deleted_at is None:
@@ -126,9 +126,9 @@ class DiaryRebuildService:
             if location.deleted_at is None:
                 location.deleted_at = now
 
-        for tag in record.tags:
-            if tag.deleted_at is None and tag.source == "ai":
-                tag.deleted_at = now
+        for inspiration in record.inspirations:
+            if inspiration.deleted_at is None:
+                inspiration.deleted_at = now
 
         await db.flush()
 
@@ -179,20 +179,12 @@ class DiaryRebuildService:
                 )
             )
 
-        surviving_user_tag_names = {
-            tag.tag_name.lower()
-            for tag in record.tags
-            if tag.deleted_at is None and tag.source == "user"
-        }
-        for tag in payload["tags"]:
-            tag_name = tag["tag_name"]
-            if tag_name.lower() in surviving_user_tag_names:
-                continue
+        for inspiration in payload["inspirations"]:
             db.add(
-                RecordTag(
+                RecordInspiration(
                     record_id=record_id,
                     user_id=user_id,
-                    tag_name=tag_name,
+                    content=inspiration["content"],
                     source="ai",
                 )
             )

@@ -13,7 +13,7 @@ const pageState = {
         emotions:  { page: 1, pageSize: 20, data: null, localFilters: {} },
         expenses:  { page: 1, pageSize: 20, data: null, localFilters: {} },
         locations: { page: 1, pageSize: 20, data: null, localFilters: {} },
-        tags:      { page: 1, pageSize: 20, data: null },
+        inspirations: { page: 1, pageSize: 20, data: null },
     }
 };
 
@@ -24,8 +24,8 @@ let originalBodyText = '';       // body_text 原始值（用于重置）
 let supplementMessages = [];     // 本轮补充消息列表（本地追踪）
 
 const todayEditState = {
-    pendingDeleteTagIds: new Set(),
-    tagEditMode: false,
+    pendingDeleteInspirationIds: new Set(),
+    inspirationEditMode: false,
 };
 
 const TAB_ENDPOINTS = {
@@ -33,7 +33,7 @@ const TAB_ENDPOINTS = {
     emotions:  '/history/emotions',
     expenses:  '/history/expenses',
     locations: '/history/locations',
-    tags:      '/history/tags',
+    inspirations: '/history/inspirations',
 };
 
 // ── 初始化 ──────────────────────────────
@@ -114,7 +114,7 @@ function renderTodaySummary(data) {
         { label: '情绪', value: (r.emotions || []).length },
         { label: '消费', value: (r.expenses || []).length },
         { label: '地点', value: (r.locations || []).length },
-        { label: '标签', value: (r.tags || []).length },
+        { label: '灵感', value: (r.inspirations || []).length },
     ];
 
     const keywordsHtml = (r.keywords || []).map(k => `<span class="keyword-tag">${escapeHtml(k)}</span>`).join('');
@@ -424,8 +424,8 @@ function renderTodaySubSections(record) {
     sections.push(renderCollapseSection('📍 地点', record.locations || [], e =>
         `<span>${escapeHtml(e.name)}</span> ${sourceTag(e.source)}`
     ));
-    // 标签区有内联编辑
-    sections.push(renderTagsSection(record.tags || []));
+    // 灵感区有内联编辑
+    sections.push(renderInspirationsSection(record.inspirations || []));
 
     return sections.join('');
 }
@@ -445,49 +445,49 @@ function renderCollapseSection(title, items, renderItem) {
         </div>`;
 }
 
-/** 标签区：支持内联编辑模式 */
-function renderTagsSection(tags) {
-    todayEditState.tagEditMode = false;
-    todayEditState.pendingDeleteTagIds.clear();
-    const count = tags.length;
+/** 灵感区：支持内联编辑模式 */
+function renderInspirationsSection(inspirations) {
+    todayEditState.inspirationEditMode = false;
+    todayEditState.pendingDeleteInspirationIds.clear();
+    const count = inspirations.length;
     return `
         <div class="collapse-section">
             <div class="collapse-header">
-                <span style="flex:1;cursor:pointer" onclick="document.getElementById('tagCollapseBody').classList.toggle('open')">
-                    🏷️ 标签 <span class="detail-section-count">${count}</span>
+                <span style="flex:1;cursor:pointer" onclick="document.getElementById('insCollapseBody').classList.toggle('open')">
+                    💡 灵感 <span class="detail-section-count">${count}</span>
                 </span>
-                <button class="section-inline-edit-btn" id="tagEditBtn" onclick="toggleTagEditMode()" title="编辑标签">✏️</button>
+                <button class="section-inline-edit-btn" id="insEditBtn" onclick="toggleInspirationEditMode()" title="编辑灵感">✏️</button>
             </div>
-            <div class="collapse-body" id="tagCollapseBody">
-                <div id="tagInnerContent">${renderTagsInner(tags, false)}</div>
+            <div class="collapse-body" id="insCollapseBody">
+                <div id="insInnerContent">${renderInspirationsInner(inspirations, false)}</div>
             </div>
         </div>`;
 }
 
-function renderTagsInner(tags, editMode) {
+function renderInspirationsInner(inspirations, editMode) {
     if (!editMode) {
-        if (tags.length === 0) return '<div class="detail-empty">暂无标签</div>';
+        if (inspirations.length === 0) return '<div class="detail-empty">暂无灵感</div>';
         return `<div class="inline-tags-display">${
-            tags.map(t => `<span class="keyword-tag">${escapeHtml(t.tag_name)}</span> ${sourceTag(t.source)}`).join('')
+            inspirations.map(i => `<span class="keyword-tag">${escapeHtml(i.content)}</span> ${sourceTag(i.source)}`).join('')
         }</div>`;
     }
-    const tagsHtml = tags.length === 0
-        ? '<div class="detail-empty">暂无标签，可在下方新增</div>'
-        : tags.map(tag => {
-            const isPending = todayEditState.pendingDeleteTagIds.has(String(tag.id));
+    const insHtml = inspirations.length === 0
+        ? '<div class="detail-empty">暂无灵感，可在下方新增</div>'
+        : inspirations.map(ins => {
+            const isPending = todayEditState.pendingDeleteInspirationIds.has(String(ins.id));
             return `<span class="edit-tag ${isPending ? 'edit-tag-pending' : ''}">
-                ${escapeHtml(tag.tag_name)}
-                <button class="edit-tag-del" onclick="toggleTagDelete('${tag.id}')" title="${isPending ? '撤销删除' : '删除标签'}">${isPending ? '↩' : '×'}</button>
+                ${escapeHtml(ins.content)}
+                <button class="edit-tag-del" onclick="toggleInspirationDelete('${ins.id}')" title="${isPending ? '撤销删除' : '删除灵感'}">${isPending ? '↩' : '×'}</button>
             </span>`;
         }).join('');
     return `
-        <div class="inline-tags-edit">${tagsHtml}</div>
+        <div class="inline-tags-edit">${insHtml}</div>
         <div class="tag-add-row">
-            <input type="text" id="tagAddInput" class="tag-add-input" placeholder="新增标签，英文逗号分隔">
+            <input type="text" id="insAddInput" class="tag-add-input" placeholder="新增灵感，英文逗号分隔">
             <div class="tag-edit-actions">
-                <button class="btn btn-primary btn-sm" onclick="saveTagEdits()">保存</button>
-                <button class="btn btn-ghost btn-sm" onclick="cancelTagEdit()">取消</button>
-                <span id="tagEditStatus" class="edit-status"></span>
+                <button class="btn btn-primary btn-sm" onclick="saveInspirationEdits()">保存</button>
+                <button class="btn btn-ghost btn-sm" onclick="cancelInspirationEdit()">取消</button>
+                <span id="insEditStatus" class="edit-status"></span>
             </div>
         </div>`;
 }
@@ -609,7 +609,7 @@ function renderTabTable(tabName, data) {
         emotions: renderEmotionsTable,
         expenses: renderExpensesTable,
         locations: renderLocationsTable,
-        tags: renderTagsTable,
+        inspirations: renderInspirationsTable,
     };
     renderers[tabName](data);
 }
@@ -668,12 +668,12 @@ function renderLocationsTable(data) {
     renderTable(headers, rows, data);
 }
 
-function renderTagsTable(data) {
-    const headers = ['日期', '标签名', '来源', '时间'];
+function renderInspirationsTable(data) {
+    const headers = ['日期', '灵感内容', '来源', '时间'];
     const rows = data.records.map(r => `
         <tr onclick="goToDetail('${r.record_date}')">
             <td class="date-link">${r.record_date}</td>
-            <td><span class="keyword-tag">${escapeHtml(r.tag_name)}</span></td>
+            <td><span class="keyword-tag">${escapeHtml(r.content)}</span></td>
             <td>${sourceTag(r.source)}</td>
             <td>${formatTime(r.created_at)}</td>
         </tr>`).join('');
@@ -761,66 +761,60 @@ async function saveNoteKw() {
 // ── 标签区内联编辑 ────────────────────────────────────
 // ════════════════════════════════════════════════════════
 
-function toggleTagEditMode() {
-    todayEditState.tagEditMode = !todayEditState.tagEditMode;
-    todayEditState.pendingDeleteTagIds.clear();
-    const btn = document.getElementById('tagEditBtn');
-    if (btn) btn.textContent = todayEditState.tagEditMode ? '✕' : '✏️';
-    const inner = document.getElementById('tagInnerContent');
+function toggleInspirationEditMode() {
+    todayEditState.inspirationEditMode = !todayEditState.inspirationEditMode;
+    todayEditState.pendingDeleteInspirationIds.clear();
+    const btn = document.getElementById('insEditBtn');
+    if (btn) btn.textContent = todayEditState.inspirationEditMode ? '✕' : '✏️';
+    const inner = document.getElementById('insInnerContent');
     if (inner && todayRecord) {
-        inner.innerHTML = renderTagsInner(todayRecord.tags || [], todayEditState.tagEditMode);
-        // 展开标签列表
-        document.getElementById('tagCollapseBody')?.classList.add('open');
+        inner.innerHTML = renderInspirationsInner(todayRecord.inspirations || [], todayEditState.inspirationEditMode);
+        // 展开列表
+        document.getElementById('insCollapseBody')?.classList.add('open');
     }
 }
 
-function toggleTagDelete(tagId) {
-    const id = String(tagId);
-    if (todayEditState.pendingDeleteTagIds.has(id)) {
-        todayEditState.pendingDeleteTagIds.delete(id);
+function toggleInspirationDelete(insId) {
+    const id = String(insId);
+    if (todayEditState.pendingDeleteInspirationIds.has(id)) {
+        todayEditState.pendingDeleteInspirationIds.delete(id);
     } else {
-        todayEditState.pendingDeleteTagIds.add(id);
+        todayEditState.pendingDeleteInspirationIds.add(id);
     }
-    const inner = document.getElementById('tagInnerContent');
+    const inner = document.getElementById('insInnerContent');
     if (inner && todayRecord) {
-        inner.innerHTML = renderTagsInner(todayRecord.tags || [], true);
+        inner.innerHTML = renderInspirationsInner(todayRecord.inspirations || [], true);
     }
 }
 
-async function saveTagEdits() {
+async function saveInspirationEdits() {
     if (!todayRecord) return;
-    setStatus('tagEditStatus', '保存中...', '');
+    setStatus('insEditStatus', '保存中...', '');
 
-    const existingActiveTagNames = (todayRecord.tags || [])
-        .filter(t => !todayEditState.pendingDeleteTagIds.has(String(t.id)))
-        .map(t => t.tag_name.toLowerCase());
+    const existingActiveInspirationContents = (todayRecord.inspirations || [])
+        .filter(t => !todayEditState.pendingDeleteInspirationIds.has(String(t.id)))
+        .map(t => t.content.toLowerCase());
 
-    const rawNew = (document.getElementById('tagAddInput')?.value || '')
+    const rawNew = (document.getElementById('insAddInput')?.value || '')
         .split(',').map(t => t.trim()).filter(t => t.length > 0);
-    const tagsToAdd = [...new Set(rawNew)].filter(t => !existingActiveTagNames.includes(t.toLowerCase()));
+    const inspirationsToAdd = [...new Set(rawNew)].filter(t => !existingActiveInspirationContents.includes(t.toLowerCase()));
 
     try {
         await apiFetch(`/daily-records/${todayRecord.id}`, {
             method: 'PUT',
             body: JSON.stringify({
-                tags_to_add: tagsToAdd,
-                tags_to_remove: [...todayEditState.pendingDeleteTagIds],
+                inspirations_to_add: inspirationsToAdd,
+                inspirations_to_remove: [...todayEditState.pendingDeleteInspirationIds],
             }),
         });
-        setStatus('tagEditStatus', '✅ 已保存', 'success');
+        setStatus('insEditStatus', '✅ 已保存', 'success');
         await loadTodaySummary();
     } catch (err) {
-        setStatus('tagEditStatus', `❌ ${err.message}`, 'error');
+        setStatus('insEditStatus', `❌ ${err.message}`, 'error');
     }
 }
 
-function cancelTagEdit() {
-    todayEditState.tagEditMode = false;
-    todayEditState.pendingDeleteTagIds.clear();
-    const btn = document.getElementById('tagEditBtn');
-    if (btn) btn.textContent = '✏️';
-    const inner = document.getElementById('tagInnerContent');
-    if (inner && todayRecord) {
-        inner.innerHTML = renderTagsInner(todayRecord.tags || [], false);
-    }
+function cancelInspirationEdit() {
+    toggleInspirationEditMode();
 }
+

@@ -8,7 +8,7 @@ from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models.daily_record import DailyRecord, RecordEvent, RecordTag, RecordEmotion, RecordLocation, RecordExpense
+from app.models.daily_record import DailyRecord, RecordEvent, RecordInspiration, RecordEmotion, RecordLocation, RecordExpense
 from app.schemas.daily_record import DailyRecordDetailResponse
 from app.schemas.history import (
     HistoryListResponse,
@@ -20,8 +20,8 @@ from app.schemas.history import (
     HistoryTimelineItemResponse,
     HistoryEventItemResponse,
     HistoryEventListResponse,
-    HistoryTagItemResponse,
-    HistoryTagListResponse,
+    HistoryInspirationItemResponse,
+    HistoryInspirationListResponse,
     HistoryEmotionItemResponse,
     HistoryEmotionListResponse,
     HistoryLocationItemResponse,
@@ -58,7 +58,7 @@ class HistoryService:
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
         keyword: Optional[str] = None,
-        tag: Optional[str] = None,
+        inspiration: Optional[str] = None,
         min_emotion_score: Optional[int] = None,
         max_emotion_score: Optional[int] = None
     ) -> HistoryListResponse:
@@ -84,13 +84,13 @@ class HistoryService:
         if keyword:
             filters.append(DailyRecord.summary_text.ilike(f"%{keyword}%"))
 
-        # tag 筛选：strip + 空字符串跳过
-        if tag:
-            tag = tag.strip()
-        if tag:
+        # inspiration 筛选：strip + 空字符串跳过
+        if inspiration:
+            inspiration = inspiration.strip()
+        if inspiration:
             filters.append(
-                DailyRecord.tags.any(
-                    (RecordTag.tag_name == tag) & (RecordTag.deleted_at.is_(None))
+                DailyRecord.inspirations.any(
+                    (RecordInspiration.content.ilike(f"%{inspiration}%")) & (RecordInspiration.deleted_at.is_(None))
                 )
             )
 
@@ -156,7 +156,7 @@ class HistoryService:
                 selectinload(DailyRecord.emotions),
                 selectinload(DailyRecord.expenses),
                 selectinload(DailyRecord.locations),
-                selectinload(DailyRecord.tags)
+                selectinload(DailyRecord.inspirations),
             )
         )
         record = (await session.execute(stmt)).scalar_one_or_none()
@@ -334,25 +334,24 @@ class HistoryService:
     # ──────────────────────────────────────────────
 
     @staticmethod
-    async def list_tags(
+    async def list_inspirations(
         session: AsyncSession,
         user_id: uuid.UUID,
         page: int,
         page_size: int,
         start_date: Optional[date] = None,
         end_date: Optional[date] = None,
-        tag_name: Optional[str] = None,
-    ) -> HistoryTagListResponse:
+        keyword: Optional[str] = None,
+    ) -> HistoryInspirationListResponse:
         if start_date and end_date and start_date > end_date:
             raise ErrorResponseAPIException(status_code=400, detail="start_date 不能晚于 end_date", code=40001)
 
-        # tag_name 清洗：strip + 空字符串按未传处理
-        if tag_name:
-            tag_name = tag_name.strip() or None
+        if keyword:
+            keyword = keyword.strip() or None
 
         filters = [
-            RecordTag.user_id == user_id,
-            RecordTag.deleted_at.is_(None),
+            RecordInspiration.user_id == user_id,
+            RecordInspiration.deleted_at.is_(None),
             DailyRecord.deleted_at.is_(None),
         ]
 
@@ -360,16 +359,16 @@ class HistoryService:
             filters.append(DailyRecord.record_date >= start_date)
         if end_date:
             filters.append(DailyRecord.record_date <= end_date)
-        if tag_name:
-            filters.append(RecordTag.tag_name == tag_name)
+        if keyword:
+            filters.append(RecordInspiration.content.ilike(f"%{keyword}%"))
 
-        count_stmt = select(func.count(RecordTag.id)).join(
-            DailyRecord, RecordTag.record_id == DailyRecord.id
+        count_stmt = select(func.count(RecordInspiration.id)).join(
+            DailyRecord, RecordInspiration.record_id == DailyRecord.id
         ).where(*filters)
         total_count = (await session.execute(count_stmt)).scalar_one()
 
         if total_count == 0:
-            return HistoryTagListResponse(
+            return HistoryInspirationListResponse(
                 total_count=0, total_pages=0,
                 current_page=page, page_size=page_size, records=[]
             )
@@ -378,33 +377,33 @@ class HistoryService:
         offset = (page - 1) * page_size
 
         stmt = select(
-            RecordTag.id,
-            RecordTag.record_id.label("daily_record_id"),
+            RecordInspiration.id,
+            RecordInspiration.record_id.label("daily_record_id"),
             DailyRecord.record_date,
-            RecordTag.tag_name,
-            RecordTag.source,
-            RecordTag.created_at,
+            RecordInspiration.content,
+            RecordInspiration.source,
+            RecordInspiration.created_at,
         ).join(
-            DailyRecord, RecordTag.record_id == DailyRecord.id
+            DailyRecord, RecordInspiration.record_id == DailyRecord.id
         ).where(*filters).order_by(
-            desc(DailyRecord.record_date), desc(RecordTag.created_at)
+            desc(DailyRecord.record_date), desc(RecordInspiration.created_at)
         ).offset(offset).limit(page_size)
 
         rows = (await session.execute(stmt)).all()
 
         records = [
-            HistoryTagItemResponse(
+            HistoryInspirationItemResponse(
                 id=r.id,
                 daily_record_id=r.daily_record_id,
                 record_date=r.record_date,
-                tag_name=r.tag_name,
+                content=r.content,
                 source=r.source,
                 created_at=r.created_at,
             )
             for r in rows
         ]
 
-        return HistoryTagListResponse(
+        return HistoryInspirationListResponse(
             total_count=total_count, total_pages=total_pages,
             current_page=page, page_size=page_size, records=records
         )

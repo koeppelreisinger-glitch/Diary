@@ -2820,6 +2820,18 @@ body.mobile-page--login .login-card {
   background: #E2F4EC;
 }
 
+.quick-chip-4 {
+  background: #E2F4FD;
+}
+
+.quick-chip-5 {
+  background: #FDECEA;
+}
+
+.quick-chip-6 {
+  background: #F9F9F0;
+}
+
 .quick-chip-title {
   font-size: 14px;
   font-weight: 800;
@@ -2857,6 +2869,21 @@ body.mobile-page--login .login-card {
 
 .quick-chip-3 .quick-chip-tag {
   background: #4CAF7D;
+  color: #fff;
+}
+
+.quick-chip-4 .quick-chip-tag {
+  background: #5A76D8;
+  color: #fff;
+}
+
+.quick-chip-5 .quick-chip-tag {
+  background: #E05FA8;
+  color: #fff;
+}
+
+.quick-chip-6 .quick-chip-tag {
+  background: #F5A623;
   color: #fff;
 }
 
@@ -3377,7 +3404,7 @@ body.mobile-page--login .login-card {
 
 .xj-place-chip:hover { transform: scale(1.04); }
 
-/* ── 标签云 ── */
+/* ── 灵感集 ── */
 .xj-tag-cloud {
   display: flex;
   flex-wrap: wrap;

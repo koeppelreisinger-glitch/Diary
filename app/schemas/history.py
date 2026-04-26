@@ -89,24 +89,24 @@ class HistoryEventListResponse(BaseSchema):
 
 
 # ──────────────────────────────────────────────
-# 五表主视图 — tags
+# 五表主视图 — inspirations
 # ──────────────────────────────────────────────
 
-class HistoryTagItemResponse(BaseSchema):
+class HistoryInspirationItemResponse(BaseSchema):
     id: uuid.UUID
     daily_record_id: uuid.UUID
     record_date: date
-    tag_name: str
+    content: str
     source: str
     created_at: datetime
 
 
-class HistoryTagListResponse(BaseSchema):
+class HistoryInspirationListResponse(BaseSchema):
     total_count: int
     total_pages: int
     current_page: int
     page_size: int
-    records: List[HistoryTagItemResponse]
+    records: List[HistoryInspirationItemResponse]
 
 
 # ──────────────────────────────────────────────

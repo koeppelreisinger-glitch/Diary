@@ -65,7 +65,7 @@ class DailyRecord(Base):
     emotions = relationship("RecordEmotion", back_populates="record", cascade="all, delete-orphan")
     expenses = relationship("RecordExpense", back_populates="record", cascade="all, delete-orphan")
     locations = relationship("RecordLocation", back_populates="record", cascade="all, delete-orphan")
-    tags = relationship("RecordTag", back_populates="record", cascade="all, delete-orphan")
+    inspirations = relationship("RecordInspiration", back_populates="record", cascade="all, delete-orphan")
     images = relationship("DailyRecordImage", back_populates="record", cascade="all, delete-orphan")
 
 Index(
@@ -162,9 +162,9 @@ class RecordLocation(Base):
     record = relationship("DailyRecord", back_populates="locations")
 
 
-class RecordTag(Base):
-    """当日标签条目"""
-    __tablename__ = "record_tags"
+class RecordInspiration(Base):
+    """当日灵感记录条目"""
+    __tablename__ = "record_inspirations"
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
@@ -175,15 +175,7 @@ class RecordTag(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False,
     )
-    tag_name: Mapped[str] = mapped_column(String(50), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
     source: Mapped[str] = mapped_column(String(20), nullable=False)
 
-    record = relationship("DailyRecord", back_populates="tags")
-
-Index(
-    "uq_record_tags_record_id_tag_name",
-    RecordTag.record_id,
-    RecordTag.tag_name,
-    unique=True,
-    postgresql_where=RecordTag.deleted_at.is_(None)
-)
+    record = relationship("DailyRecord", back_populates="inspirations")

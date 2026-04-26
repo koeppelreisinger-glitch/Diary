@@ -24,7 +24,7 @@
         <div class="container">
             <!-- 搜索栏 -->
             <div class="search-bar">
-                <input type="text" id="searchInput" placeholder="搜索：正文、总结、事件、情绪、消费、地点、标签..." oninput="onSearchInput()">
+                <input type="text" id="searchInput" placeholder="搜索：正文、总结、事件、情绪、消费、地点、灵感..." oninput="onSearchInput()">
                 <button class="btn btn-secondary btn-sm" onclick="clearSearch()">清除</button>
             </div>
 
@@ -54,16 +54,16 @@
                     <input type="text" id="edit-keywords" placeholder="工作, 疲惫, 放松">
                 </div>
 
-                <!-- 已有标签 -->
+                <!-- 已有灵感 -->
                 <div class="edit-group">
-                    <label>当前标签 <span class="hint">点击 × 标记删除，保存时生效</span></label>
+                    <label>当前灵感 <span class="hint">点击 × 标记删除，保存时生效</span></label>
                     <div class="edit-tags-row" id="edit-tags-current"></div>
                 </div>
 
-                <!-- 新增标签 -->
+                <!-- 新增灵感 -->
                 <div class="edit-group">
-                    <label for="edit-tags-add">新增标签 <span class="hint">英文逗号分隔，与现有标签重复的会被忽略</span></label>
-                    <input type="text" id="edit-tags-add" placeholder="复盘, 工作, 生活">
+                    <label for="edit-tags-add">新增灵感 <span class="hint">英文逗号分隔，与现有灵感重复的会被忽略</span></label>
+                    <input type="text" id="edit-tags-add" placeholder="在这里写下你的新想法...">
                 </div>
 
                 <!-- 操作按钮 -->
