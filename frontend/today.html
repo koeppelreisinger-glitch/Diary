@@ -248,6 +248,25 @@
 <body class="mobile-page">
     <div class="mobile-stage">
 
+    <!-- ── 快速记录弹层 (Mode Modal) ── -->
+    <div id="quickModalOverlay" class="modal-overlay" onclick="closeQuickRecord()">
+        <div class="modal-sheet" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title" id="quickModalTitle">快速记录</div>
+                <button class="modal-close" onclick="closeQuickRecord()">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="quickModalBadge" class="mode-badge"></div>
+                <textarea id="quickModalInput" class="modal-textarea" placeholder="在这里写下你的内容..."></textarea>
+                <div class="modal-actions">
+                    <button class="btn btn-primary btn-block" id="quickModalSendBtn" onclick="sendQuickMessage()">
+                        发送并保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
         <header class="app-header">
             <div class="app-header-logo">Echo</div>
             <div class="app-header-actions">
@@ -377,35 +396,25 @@
                 <div class="section-row-title">快速记录</div>
             </div>
             <div class="quick-chips" id="quickRecordChips" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0 16px 16px;">
-                <div class="quick-chip quick-chip-1" onclick="scrollToJournal()" style="margin:0; width:100%; height:auto; padding:16px;">
-                    <div class="quick-chip-title" style="font-size:15px; margin-bottom:4px">今日一事 🗓️</div>
-                    <div class="quick-chip-desc" style="font-size:11px; margin-bottom:10px">写下这一天留下的痕迹</div>
-                    <span class="quick-chip-tag" style="position:static; font-size:10px; padding:4px 10px">开始写</span>
+                <div class="quick-chip quick-chip-4" onclick="openQuickRecord('expense')" style="margin:0; width:100%; height:auto; padding:16px;">
+                    <div class="quick-chip-title" style="font-size:15px; margin-bottom:4px">记账模式 💸</div>
+                    <div class="quick-chip-desc" style="font-size:11px; margin-bottom:10px">记录碎银几两，AI 自动对账</div>
+                    <span class="quick-chip-tag" style="position:static; font-size:10px; padding:4px 10px">记一笔</span>
                 </div>
-                <div class="quick-chip quick-chip-2" onclick="scrollToJournal()" style="margin:0; width:100%; height:auto; padding:16px;">
-                    <div class="quick-chip-title" style="font-size:15px; margin-bottom:4px">此刻心情 🌫️</div>
-                    <div class="quick-chip-desc" style="font-size:11px; margin-bottom:10px">你现在感觉怎么样</div>
-                    <span class="quick-chip-tag" style="position:static; font-size:10px; padding:4px 10px">开始写</span>
+                <div class="quick-chip quick-chip-6" onclick="openQuickRecord('inspiration')" style="margin:0; width:100%; height:auto; padding:16px;">
+                    <div class="quick-chip-title" style="font-size:15px; margin-bottom:4px">灵感记录 💡</div>
+                    <div class="quick-chip-desc" style="font-size:11px; margin-bottom:10px">捕捉闪念瞬间，留住生活感悟</div>
+                    <span class="quick-chip-tag" style="position:static; font-size:10px; padding:4px 10px">去写下</span>
                 </div>
-                <div class="quick-chip quick-chip-3" onclick="scrollToJournal()" style="margin:0; width:100%; height:auto; padding:16px;">
-                    <div class="quick-chip-title" style="font-size:15px; margin-bottom:4px">落脚之处 📍</div>
-                    <div class="quick-chip-desc" style="font-size:11px; margin-bottom:10px">今天你在哪里停留过</div>
-                    <span class="quick-chip-tag" style="position:static; font-size:10px; padding:4px 10px">开始写</span>
+                <div class="quick-chip quick-chip-3" onclick="openQuickRecord('learning')" style="margin:0; width:100%; height:auto; padding:16px;">
+                    <div class="quick-chip-title" style="font-size:15px; margin-bottom:4px">学习进度 📚</div>
+                    <div class="quick-chip-desc" style="font-size:11px; margin-bottom:10px">记录日进有功，见证成长的痕迹</div>
+                    <span class="quick-chip-tag" style="position:static; font-size:10px; padding:4px 10px">记进度</span>
                 </div>
-                <div class="quick-chip quick-chip-4" onclick="scrollToJournal()" style="margin:0; width:100%; height:auto; padding:16px;">
-                    <div class="quick-chip-title" style="font-size:15px; margin-bottom:4px">流水账 💸</div>
-                    <div class="quick-chip-desc" style="font-size:11px; margin-bottom:10px">钱花在了什么地方</div>
-                    <span class="quick-chip-tag" style="position:static; font-size:10px; padding:4px 10px">开始写</span>
-                </div>
-                <div class="quick-chip quick-chip-5" onclick="scrollToJournal()" style="margin:0; width:100%; height:auto; padding:16px;">
-                    <div class="quick-chip-title" style="font-size:15px; margin-bottom:4px">微小确幸 🌿</div>
-                    <div class="quick-chip-desc" style="font-size:11px; margin-bottom:10px">有什么事让你轻轻一笑</div>
-                    <span class="quick-chip-tag" style="position:static; font-size:10px; padding:4px 10px">开始写</span>
-                </div>
-                <div class="quick-chip quick-chip-6" onclick="scrollToJournal()" style="margin:0; width:100%; height:auto; padding:16px;">
-                    <div class="quick-chip-title" style="font-size:15px; margin-bottom:4px">明日之约 🕯️</div>
-                    <div class="quick-chip-desc" style="font-size:11px; margin-bottom:10px">想留给明天的一句话</div>
-                    <span class="quick-chip-tag" style="position:static; font-size:10px; padding:4px 10px">开始写</span>
+                <div class="quick-chip quick-chip-2" onclick="openQuickRecord('chat')" style="margin:0; width:100%; height:auto; padding:16px;">
+                    <div class="quick-chip-title" style="font-size:15px; margin-bottom:4px">闲聊天模式 💬</div>
+                    <div class="quick-chip-desc" style="font-size:11px; margin-bottom:10px">倾诉此刻心声，寻找温柔共鸣</div>
+                    <span class="quick-chip-tag" style="position:static; font-size:10px; padding:4px 10px">去倾诉</span>
                 </div>
             </div>
             </div><!-- /todayMainContent -->

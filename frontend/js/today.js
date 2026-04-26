@@ -4,6 +4,35 @@ const todayPageState = {
     todayRecord: null,
 };
 
+const QUICK_MODES = {
+    expense: {
+        title: '记账模式 💸',
+        placeholder: '比如：晚餐 58，或者 打车 20',
+        badge: '流水账',
+        color: '#5A76D8'
+    },
+    inspiration: {
+        title: '灵感记录 💡',
+        placeholder: '此刻有什么一闪而过的想法？',
+        badge: '灵感闪现',
+        color: '#F5A623'
+    },
+    learning: {
+        title: '学习进度 📚',
+        placeholder: '今天学到了什么新知识？进度如何？',
+        badge: '日进有功',
+        color: '#4CAF7D'
+    },
+    chat: {
+        title: '闲聊天模式 💬',
+        placeholder: '想说什么都可以，我会一直听着...',
+        badge: '倾诉心声',
+        color: '#9D8FE0'
+    }
+};
+
+let currentQuickMode = null;
+
 // ── 图片上传状态 ──────────────────────────────
 let _pendingImageId  = null;  // 已上传图片的 UUID
 let _pendingImageSrc = null;  // 上传后的服务器 URL（或本地 ObjectURL）
@@ -356,5 +385,91 @@ async function completeTodayConversation() {
     } finally {
         completeBtn.disabled = false;
         completeBtn.textContent = '结束今日记录';
+    }
+}
+
+// ── 快速记录弹层逻辑 ──────────────────────────────────────────
+
+function openQuickRecord(mode) {
+    const config = QUICK_MODES[mode];
+    if (!config) return;
+
+    currentQuickMode = mode;
+    
+    document.getElementById('quickModalTitle').textContent = config.title;
+    const badge = document.getElementById('quickModalBadge');
+    badge.textContent = config.badge;
+    badge.style.background = config.color + '22'; // 14% opacity
+    badge.style.color = config.color;
+    
+    const input = document.getElementById('quickModalInput');
+    input.value = '';
+    input.placeholder = config.placeholder;
+    
+    document.getElementById('quickModalOverlay').classList.add('active');
+    setTimeout(() => input.focus(), 100);
+}
+
+function closeQuickRecord() {
+    document.getElementById('quickModalOverlay').classList.remove('active');
+    currentQuickMode = null;
+}
+
+async function sendQuickMessage() {
+    const input = document.getElementById('quickModalInput');
+    const content = input.value.trim();
+    const btn = document.getElementById('quickModalSendBtn');
+
+    if (!content) return;
+
+    // 1. 如果今天还没开始记录，先开始
+    if (!todayPageState.conversation) {
+        try {
+            btn.disabled = true;
+            btn.textContent = '正在开启记录...';
+            await startTodayConversation();
+        } catch (err) {
+            alert('开启记录失败: ' + err.message);
+            btn.disabled = false;
+            btn.textContent = '发送并保存';
+            return;
+        }
+    }
+
+    // 2. 发送消息
+    try {
+        btn.disabled = true;
+        btn.textContent = '保存中...';
+
+        const body = {
+            content_type: 'text',
+            content: content,
+            is_supplement: false,
+        };
+
+        const response = await apiFetch(`/conversations/${todayPageState.conversation.id}/messages`, {
+            method: 'POST',
+            body: JSON.stringify(body),
+        });
+
+        if (todayPageState.messages) {
+            todayPageState.messages.push(response.user_message, response.ai_message);
+        }
+
+        // 成功后关闭并刷新
+        closeQuickRecord();
+        await refreshTodayPage();
+        
+        // 滚动到记录区域
+        setTimeout(() => {
+            const stage = document.getElementById('todayStage');
+            if (stage) stage.scrollIntoView({ behavior: 'smooth' });
+        }, 300);
+
+    } catch (err) {
+        alert('发送失败: ' + err.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '发送并保存';
     }
 }
