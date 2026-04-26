@@ -268,6 +268,11 @@ async function loadTodayMessages(conversationId) {
 }
 
 async function startTodayConversation() {
+    const btn = event?.target;
+    if (btn && btn.tagName === 'BUTTON') {
+        btn.disabled = true;
+        btn.textContent = '正在开启...';
+    }
     renderTodayNotice('');
     try {
         await apiFetch('/conversations', {
@@ -276,6 +281,10 @@ async function startTodayConversation() {
         await refreshTodayPage();
     } catch (err) {
         renderTodayNotice(err.message || '创建会话失败', 'error');
+        if (btn && btn.tagName === 'BUTTON') {
+            btn.disabled = false;
+            btn.textContent = '开始今日记录';
+        }
     }
 }
 

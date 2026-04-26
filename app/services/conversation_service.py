@@ -114,7 +114,19 @@ class ConversationService:
             await session.refresh(new_conv)
         except IntegrityError:
             await session.rollback()
-            raise ErrorResponseAPIException(status_code=409, detail="今日会话已存在，不允许重复创建", code=40901)
+            # 幂等性处理：如果已经存在，则查询并返回已存在的会话
+            stmt_existing = select(Conversation).where(
+                Conversation.user_id == user_id,
+                Conversation.record_date == today_date,
+                Conversation.deleted_at.is_(None)
+            )
+            existing_conv = (await session.execute(stmt_existing)).scalar_one()
+            return CreateConversationResponse(
+                id=existing_conv.id,
+                status=existing_conv.status,
+                record_date=existing_conv.record_date,
+                created_at=existing_conv.created_at
+            )
 
         return CreateConversationResponse(
             id=new_conv.id,
