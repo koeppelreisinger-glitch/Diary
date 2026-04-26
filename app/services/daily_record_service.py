@@ -33,10 +33,10 @@ class DailyRecordService:
 
     @staticmethod
     async def _get_today_date(session: AsyncSession, user_id: uuid.UUID) -> datetime.date:
-        stmt = select(UserSetting).where(UserSetting.user_id == user_id, UserSetting.deleted_at.is_(None))
-        setting = (await session.execute(stmt)).scalar_one_or_none()
+        stmt = select(UserSetting.timezone).where(UserSetting.user_id == user_id, UserSetting.deleted_at.is_(None))
+        timezone = (await session.execute(stmt)).scalar_one_or_none()
         # 容错：用户无设置或时区为空时，fallback 到 Asia/Shanghai
-        tz_str = (setting.timezone if setting and setting.timezone else None) or "Asia/Shanghai"
+        tz_str = timezone or "Asia/Shanghai"
         try:
             return datetime.now(zoneinfo.ZoneInfo(tz_str)).date()
         except Exception:
