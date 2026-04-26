@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     TOKENHUB_CHAT_COMPLETIONS_URL: str = "https://tokenhub.tencentmaas.com/v1/chat/completions"
     TOKENHUB_AUTHORIZATION: str | None = None
     TOKENHUB_API_KEY: str | None = None
-    TOKENHUB_MODEL: str = "glm-5"
+    TOKENHUB_MODEL: str = "glm-4-flash"
     TOKENHUB_CHAT_CONTEXT_LIMIT: int = 10
     TOKENHUB_CHAT_SYSTEM_PROMPT: str = (
         "你是「Echo」，用户的日记伙伴，帮他把这一天的事情记下来。\n"

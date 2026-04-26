@@ -166,10 +166,13 @@
     <script>
         if (!requireAuth()) { /* 跳登录 */ }
         else {
-            init();
             initDateLabel();
-            loadGreeting();
-            loadPhotoToday();
+            // 并行发起所有初始化请求，显著提升首屏加载速度
+            Promise.all([
+                init(),
+                loadGreeting(),
+                loadPhotoToday()
+            ]).catch(console.error);
         }
 
         async function loadGreeting() {
@@ -200,6 +203,7 @@
                         return '<img src="' + escapeHtml(src) + '"'
                             + ' alt="' + escapeHtml(img.ai_caption || '') + '"'
                             + ' title="' + escapeHtml(img.ai_caption || '') + '"'
+                            + ' loading="lazy"'
                             + ' style="width:72px;height:72px;object-fit:cover;border-radius:8px;'
                             + 'flex-shrink:0;cursor:pointer"'
                             + ' onclick="window.open(\'' + escapeHtml(img.url) + '\',\'_blank\')">';
@@ -260,7 +264,7 @@
                             + escapeHtml(img.ai_caption) + '</div>'
                             : '';
                         return '<div style="position:relative;width:88px;height:88px;flex-shrink:0">'
-                            + '<img src="' + escapeHtml(src) + '" alt=""'
+                            + '<img src="' + escapeHtml(src) + '" alt="" loading="lazy"'
                             + ' style="width:88px;height:88px;object-fit:cover;border-radius:10px;'
                             + 'cursor:pointer;display:block"'
                             + ' onclick="window.open(\'' + escapeHtml(img.url) + '\',\'_blank\')">'
