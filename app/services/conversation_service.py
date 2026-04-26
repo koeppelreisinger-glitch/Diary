@@ -84,6 +84,19 @@ class ConversationService:
         )
         session.add(new_conv)
 
+        # ── 预加载指令 ──────────────────────────────────────────────────
+        # 当会话创建时，预先插入系统指令作为第 0 条消息，实现「预读取」
+        from app.core.config import settings
+        system_msg = ConversationMessage(
+            conversation_id=new_conv.id,
+            role="system",
+            content_type="text",
+            content=settings.TOKENHUB_CHAT_SYSTEM_PROMPT,
+            sequence_number=0  # 系统指令序号为 0
+        )
+        session.add(system_msg)
+        # ──────────────────────────────────────────────────────────────
+
         try:
             await session.commit()
             await session.refresh(new_conv)
@@ -198,7 +211,7 @@ class ConversationService:
             await session.rollback()
             raise ErrorResponseAPIException(status_code=500, detail="并发消息序号分配冲突", code=50000)
 
-        # 取出该会话所有消息送给 AI 伙伴
+        # 取出该会话所有消息（包含已预加载的 system 消息）送给 AI 伙伴
         stmt_all_msgs = select(ConversationMessage).where(
             ConversationMessage.conversation_id == conversation_id,
             ConversationMessage.deleted_at.is_(None)

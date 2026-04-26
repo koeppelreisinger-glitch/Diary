@@ -44,36 +44,50 @@ class AICompanionService:
         return reply_text.strip()
 
     def _build_chat_messages(self, messages: List[ConversationMessage], mode: str | None = None) -> list[dict]:
-        system_content = settings.TOKENHUB_CHAT_SYSTEM_PROMPT
-
-        # 回复风格优化：保持自然，避免废话
-        system_content += "\n【回复风格】保持自然对话感，避免冗长重复。优先直接回应用户内容。"
+        chat_messages: list[dict] = []
         
+        # 1. 提取预加载的系统指令（如果有的话）
+        # 我们假设 sequence_number 为 0 的是系统指令
+        system_msg = next((m for m in messages if m.role == "system"), None)
+        
+        if system_msg:
+            chat_messages.append({"role": "system", "content": system_msg.content})
+        else:
+            # 兜底：如果数据库里没找到，则使用代码中的默认指令
+            chat_messages.append({"role": "system", "content": settings.TOKENHUB_CHAT_SYSTEM_PROMPT})
+
+        # 2. 注入回复风格优化指令
+        chat_messages.append({
+            "role": "system", 
+            "content": "【回复风格】保持自然对话感，避免冗长重复。优先直接回应用户内容。"
+        })
+        
+        # 3. 处理模式特定的指令
         if mode:
-            # 模式下的特定指令
             mode_prompts = {
                 "expense": "记账模式：你是干练管家，仅确认金额分类，不寒暄。",
                 "inspiration": "灵感模式：你是细腻知音，肯定价值并引发深度共鸣。",
                 "learning": "学习模式：你是热血同伴，强调积累并给予成就反馈。",
                 "chat": "闲聊模式：你是温柔电台，只做情绪承接，不做逻辑分析。"
             }
-            system_content += f"\n{mode_prompts.get(mode, '')}"
-            system_content += "\n提问引导：少量是非题。询问实质性开放问题，引导描述细节、感受或过程。"
+            mode_content = mode_prompts.get(mode, '')
+            if mode_content:
+                chat_messages.append({"role": "system", "content": mode_content})
+            
+            chat_messages.append({
+                "role": "system", 
+                "content": "提问引导：少量是非题。询问实质性开放问题，引导描述细节、感受或过程。"
+            })
         
-        chat_messages: list[dict] = [
-            {"role": "system", "content": system_content}
-        ]
-
-        # 使用默认的上下文长度以保证对话质量
-        recent_messages = messages[-settings.TOKENHUB_CHAT_CONTEXT_LIMIT:]
+        # 4. 加入最近的对话上下文
+        # 排除掉系统消息后，取最近的 N 条
+        other_messages = [m for m in messages if m.role in ("user", "ai")]
+        recent_messages = other_messages[-settings.TOKENHUB_CHAT_CONTEXT_LIMIT:]
+        
         for message in recent_messages:
             role = "assistant" if message.role == "ai" else "user"
-            if role not in {"user", "assistant"}:
-                continue
-
             content = (message.content or "").strip()
 
-            # 若消息携带图片 URL，构造 Vision 多模态内容数组
             image_url = getattr(message, "image_url", None)
             if image_url and role == "user":
                 parts: list[dict] = [
