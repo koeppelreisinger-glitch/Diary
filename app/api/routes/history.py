@@ -17,8 +17,6 @@ from app.schemas.history import (
 )
 from app.schemas.daily_record import DailyRecordDetailResponse
 from app.services.history_service import HistoryService
-from app.services.export_service import ExportService
-from fastapi.responses import Response
 
 
 router = APIRouter(prefix="/history", tags=["History"])
@@ -339,29 +337,3 @@ async def get_history_expenses(
         max_amount=max_amount
     )
     return ApiResponse(data=result)
-@router.get("/export")
-async def export_history_data(
-    session: SessionDep,
-    current_user: CurrentUser,
-    format: str = Query("json", enum=["json", "markdown"])
-):
-    """
-    导出用户所有历史数据。
-    支持 json 和 markdown 格式。
-    """
-    if format == "json":
-        content = await ExportService.export_user_data_json(session, current_user.id)
-        media_type = "application/json"
-        filename = f"echo_export_{current_user.id.hex[:6]}.json"
-    else:
-        content = await ExportService.export_user_data_markdown(session, current_user.id)
-        media_type = "text/markdown"
-        filename = f"echo_export_{current_user.id.hex[:6]}.md"
-
-    return Response(
-        content=content,
-        media_type=media_type,
-        headers={
-            "Content-Disposition": f"attachment; filename={filename}"
-        }
-    )

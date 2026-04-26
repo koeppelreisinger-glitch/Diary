@@ -3006,15 +3006,8 @@ body.mobile-page--login .login-card {
 }
 
 @keyframes xj-orb-float {
-
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-5px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 }
 
 /* ── 时间范围选择器 ── */
@@ -3072,21 +3065,10 @@ body.mobile-page--login .login-card {
   border-radius: 22px 22px 0 0;
 }
 
-.xj-accent-warm {
-  background: var(--grad-warm);
-}
-
-.xj-accent-purple {
-  background: var(--grad-purple);
-}
-
-.xj-accent-sky {
-  background: var(--grad-sky);
-}
-
-.xj-accent-coral {
-  background: var(--grad-coral);
-}
+.xj-accent-warm   { background: var(--grad-warm); }
+.xj-accent-purple { background: var(--grad-purple); }
+.xj-accent-sky    { background: var(--grad-sky); }
+.xj-accent-coral  { background: var(--grad-coral); }
 
 .xj-card-header {
   display: flex;
@@ -3187,11 +3169,7 @@ body.mobile-page--login .login-card {
 }
 
 /* Mini bars (概览) */
-.xj-mini-bars {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
+.xj-mini-bars { display: flex; flex-direction: column; gap: 5px; }
 
 .xj-mini-bar-row {
   display: flex;
@@ -3233,16 +3211,9 @@ body.mobile-page--login .login-card {
 }
 
 /* 分类 bars */
-.xj-cat-bars {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+.xj-cat-bars { display: flex; flex-direction: column; gap: 8px; }
 
-.xj-cat-bar-row {
-  display: flex;
-  flex-direction: column;
-}
+.xj-cat-bar-row { display: flex; flex-direction: column; }
 
 .xj-cat-bar-meta {
   display: flex;
@@ -3251,14 +3222,8 @@ body.mobile-page--login .login-card {
   margin-bottom: 2px;
 }
 
-.xj-cat-bar-name {
-  color: var(--text-primary);
-  font-weight: 500;
-}
-
-.xj-cat-bar-amt {
-  color: var(--text-secondary);
-}
+.xj-cat-bar-name { color: var(--text-primary); font-weight: 500; }
+.xj-cat-bar-amt  { color: var(--text-secondary); }
 
 /* 明细列表 */
 .xj-ledger-list {
@@ -3280,13 +3245,8 @@ body.mobile-page--login .login-card {
   border-radius: var(--radius-sm);
 }
 
-.xj-ledger-row:hover {
-  background: var(--bg-secondary);
-}
-
-.xj-ledger-row:last-child {
-  border-bottom: none;
-}
+.xj-ledger-row:hover { background: var(--bg-secondary); }
+.xj-ledger-row:last-child { border-bottom: none; }
 
 .xj-ledger-date {
   font-size: 11px;
@@ -3344,9 +3304,7 @@ body.mobile-page--login .login-card {
   transition: transform 0.15s ease;
 }
 
-.xj-emotion-chip:hover {
-  transform: scale(1.06);
-}
+.xj-emotion-chip:hover { transform: scale(1.06); }
 
 /* ── 事件流水区 ── */
 .xj-stream-header {
@@ -3389,15 +3347,8 @@ body.mobile-page--login .login-card {
 }
 
 @keyframes xj-wave {
-
-  0%,
-  100% {
-    transform: translateX(0) scaleY(1);
-  }
-
-  50% {
-    transform: translateX(6%) scaleY(0.75);
-  }
+  0%, 100% { transform: translateX(0) scaleY(1); }
+  50%       { transform: translateX(6%) scaleY(0.75); }
 }
 
 /* 漂浮文字 */
@@ -3413,23 +3364,10 @@ body.mobile-page--login .login-card {
 }
 
 @keyframes xj-float-up {
-  0% {
-    transform: translateY(190px) translateX(0);
-    opacity: 0;
-  }
-
-  8% {
-    opacity: 0.85;
-  }
-
-  88% {
-    opacity: 0.7;
-  }
-
-  100% {
-    transform: translateY(-30px) translateX(var(--xj-drift, 0px));
-    opacity: 0;
-  }
+  0%   { transform: translateY(190px) translateX(0);                opacity: 0; }
+  8%   { opacity: 0.85; }
+  88%  { opacity: 0.7; }
+  100% { transform: translateY(-30px) translateX(var(--xj-drift, 0px)); opacity: 0; }
 }
 
 .xj-stream-loading,
@@ -3469,17 +3407,14 @@ body.mobile-page--login .login-card {
   --chat-accent: #F5A623;
   --chat-bg-light: #F9F9F0;
 }
-
 .chat-layout.theme-inspiration {
   --chat-accent: #5A76D8;
   --chat-bg-light: #E2F4FD;
 }
-
 .chat-layout.theme-learning {
   --chat-accent: #4CAF7D;
   --chat-bg-light: #E2F4EC;
 }
-
 .chat-layout.theme-chat {
   --chat-accent: #9D8FE0;
   --chat-bg-light: #EDE8FD;
@@ -3487,7 +3422,7 @@ body.mobile-page--login .login-card {
 
 .chat-layout[class*="theme-"] .chat-layout__header {
   background: var(--chat-bg-light);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
   margin: -20px -20px 20px;
   padding: 24px 20px 16px;
   border-radius: 20px 20px 0 0;
@@ -3547,13 +3482,8 @@ body.mobile-page--login .login-card {
 }
 
 @keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
-
-  to {
-    transform: translateY(0);
-  }
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 
 .modal-header {
@@ -3622,9 +3552,7 @@ body.mobile-page--login .login-card {
   font-size: 16px;
 }
 
-.xj-place-chip:hover {
-  transform: scale(1.04);
-}
+.xj-place-chip:hover { transform: scale(1.04); }
 
 /* ── 灵感集 ── */
 .xj-tag-cloud {

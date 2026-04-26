@@ -56,7 +56,7 @@ class AuthService:
                 user_id=new_user.id,
                 timezone="UTC",
                 input_preference="mixed",
-                is_dark_mode=False
+                reminder_enabled=False
             )
             session.add(new_setting)
 
