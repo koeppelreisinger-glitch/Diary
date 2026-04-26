@@ -6,16 +6,16 @@ const todayPageState = {
 
 const QUICK_MODES = {
     expense: {
-        title: '记账模式 💸',
+        title: '记账模式 💰',
         placeholder: '比如：晚餐 58，或者 打车 20',
         badge: '流水账',
-        color: '#5A76D8'
+        color: '#F5A623'
     },
     inspiration: {
-        title: '灵感记录 💡',
+        title: '灵感记录 ✨',
         placeholder: '此刻有什么一闪而过的想法？',
         badge: '灵感闪现',
-        color: '#F5A623'
+        color: '#5A76D8'
     },
     learning: {
         title: '学习进度 📚',
@@ -157,12 +157,18 @@ function renderStateRecording() {
     const conversation = todayPageState.conversation;
     const messages = todayPageState.messages;
 
+    const config = currentQuickMode ? QUICK_MODES[currentQuickMode] : null;
+    const themeClass = currentQuickMode ? `theme-${currentQuickMode}` : '';
+    const title = config ? config.title : '今天正在记录中';
+    const placeholder = config ? config.placeholder : '直接说今天的事、感受、消费、地点都可以。';
+    const label = config ? config.badge : '今天发生了什么？';
+
     stage.innerHTML = `
-        <section class="chat-layout">
+        <section class="chat-layout ${themeClass}">
             <div class="chat-layout__header">
                 <div>
-                    <p class="chat-layout__eyebrow">状态 B</p>
-                    <h2 class="chat-layout__title">今天正在记录中</h2>
+                    <p class="chat-layout__eyebrow">${currentQuickMode ? '专项记录' : '日常对话'}</p>
+                    <h2 class="chat-layout__title">${escapeHtml(title)}</h2>
                 </div>
                 <div class="chat-layout__meta">
                     <span class="chat-meta-pill">会话日期 ${escapeHtml(conversation.record_date)}</span>
@@ -176,7 +182,7 @@ function renderStateRecording() {
                 </div>
 
                 <div class="chat-input-panel">
-                    <label class="chat-input-label" for="todayMessageInput">今天发生了什么？</label>
+                    <label class="chat-input-label" for="todayMessageInput">${escapeHtml(label)}</label>
 
                     <!-- 图片预览区（默认隐藏） -->
                     <div id="imgPreviewArea" style="display:none;align-items:center;gap:10px;
@@ -205,7 +211,7 @@ function renderStateRecording() {
                         <input type="file" id="imgFileInput" accept="image/*"
                                style="display:none" onchange="onImageSelected(event)">
                         <textarea id="todayMessageInput" rows="3"
-                                  placeholder="直接说今天的事、感受、消费、地点都可以。"
+                                  placeholder="${escapeHtml(placeholder)}"
                                   style="flex:1"></textarea>
                     </div>
 
@@ -217,6 +223,12 @@ function renderStateRecording() {
             </div>
         </section>
     `;
+    
+    const messagesEl = document.getElementById('chatMessages');
+    if (messagesEl) {
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+}
 
     const messagesEl = document.getElementById('chatMessages');
     if (messagesEl) {
@@ -294,6 +306,7 @@ async function sendTodayMessage() {
             content_type: 'text',
             content: content || '（图片消息）',
             is_supplement: false,
+            mode: currentQuickMode,
         };
         if (_pendingImageSrc) body.image_url = _pendingImageSrc;
 
@@ -388,89 +401,27 @@ async function completeTodayConversation() {
     }
 }
 
-// ── 快速记录弹层逻辑 ──────────────────────────────────────────
+// ── 快速记录逻辑 (Inline) ──────────────────────────────────────────
 
-function openQuickRecord(mode) {
-    const config = QUICK_MODES[mode];
-    if (!config) return;
-
+async function openQuickRecord(mode) {
     currentQuickMode = mode;
     
-    document.getElementById('quickModalTitle').textContent = config.title;
-    const badge = document.getElementById('quickModalBadge');
-    badge.textContent = config.badge;
-    badge.style.background = config.color + '22'; // 14% opacity
-    badge.style.color = config.color;
-    
-    const input = document.getElementById('quickModalInput');
-    input.value = '';
-    input.placeholder = config.placeholder;
-    
-    document.getElementById('quickModalOverlay').classList.add('active');
-    setTimeout(() => input.focus(), 100);
-}
-
-function closeQuickRecord() {
-    document.getElementById('quickModalOverlay').classList.remove('active');
-    currentQuickMode = null;
-}
-
-async function sendQuickMessage() {
-    const input = document.getElementById('quickModalInput');
-    const content = input.value.trim();
-    const btn = document.getElementById('quickModalSendBtn');
-
-    if (!content) return;
-
-    // 1. 如果今天还没开始记录，先开始
+    // 如果还没开始今天的会话，先静默开始
     if (!todayPageState.conversation) {
-        try {
-            btn.disabled = true;
-            btn.textContent = '正在开启记录...';
-            await startTodayConversation();
-        } catch (err) {
-            alert('开启记录失败: ' + err.message);
-            btn.disabled = false;
-            btn.textContent = '发送并保存';
-            return;
-        }
+        await startTodayConversation();
+    } else {
+        // 如果已经在记录中，重新渲染一次以应用主题
+        renderStateRecording();
     }
-
-    // 2. 发送消息
-    try {
-        btn.disabled = true;
-        btn.textContent = '保存中...';
-
-        const body = {
-            content_type: 'text',
-            content: content,
-            is_supplement: false,
-            mode: currentQuickMode,
-        };
-
-        const response = await apiFetch(`/conversations/${todayPageState.conversation.id}/messages`, {
-            method: 'POST',
-            body: JSON.stringify(body),
-        });
-
-        if (todayPageState.messages) {
-            todayPageState.messages.push(response.user_message, response.ai_message);
+    
+    // 滚动到记录区域
+    setTimeout(() => {
+        const stage = document.getElementById('todayStage');
+        if (stage) {
+            stage.scrollIntoView({ behavior: 'smooth' });
+            // 自动聚焦输入框
+            const input = document.getElementById('todayMessageInput');
+            if (input) input.focus();
         }
-
-        // 成功后关闭并刷新
-        closeQuickRecord();
-        await refreshTodayPage();
-        
-        // 滚动到记录区域
-        setTimeout(() => {
-            const stage = document.getElementById('todayStage');
-            if (stage) stage.scrollIntoView({ behavior: 'smooth' });
-        }, 300);
-
-    } catch (err) {
-        alert('发送失败: ' + err.message);
-    } finally {
-        btn.disabled = false;
-        btn.textContent = '发送并保存';
-    }
+    }, 100);
 }

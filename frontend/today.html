@@ -248,24 +248,7 @@
 <body class="mobile-page">
     <div class="mobile-stage">
 
-    <!-- ── 快速记录弹层 (Mode Modal) ── -->
-    <div id="quickModalOverlay" class="modal-overlay" onclick="closeQuickRecord()">
-        <div class="modal-sheet" onclick="event.stopPropagation()">
-            <div class="modal-header">
-                <div class="modal-title" id="quickModalTitle">快速记录</div>
-                <button class="modal-close" onclick="closeQuickRecord()">×</button>
-            </div>
-            <div class="modal-body">
-                <div id="quickModalBadge" class="mode-badge"></div>
-                <textarea id="quickModalInput" class="modal-textarea" placeholder="在这里写下你的内容..."></textarea>
-                <div class="modal-actions">
-                    <button class="btn btn-primary btn-block" id="quickModalSendBtn" onclick="sendQuickMessage()">
-                        发送并保存
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+
 
         <header class="app-header">
             <div class="app-header-logo">Echo</div>
@@ -396,13 +379,13 @@
                 <div class="section-row-title">快速记录</div>
             </div>
             <div class="quick-chips" id="quickRecordChips" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0 16px 16px;">
-                <div class="quick-chip quick-chip-4" onclick="openQuickRecord('expense')" style="margin:0; width:100%; height:auto; padding:16px;">
-                    <div class="quick-chip-title" style="font-size:15px; margin-bottom:4px">记账模式 💸</div>
+                <div class="quick-chip quick-chip-6" onclick="openQuickRecord('expense')" style="margin:0; width:100%; height:auto; padding:16px;">
+                    <div class="quick-chip-title" style="font-size:15px; margin-bottom:4px">记账模式 💰</div>
                     <div class="quick-chip-desc" style="font-size:11px; margin-bottom:10px">记录碎银几两，AI 自动对账</div>
                     <span class="quick-chip-tag" style="position:static; font-size:10px; padding:4px 10px">记一笔</span>
                 </div>
-                <div class="quick-chip quick-chip-6" onclick="openQuickRecord('inspiration')" style="margin:0; width:100%; height:auto; padding:16px;">
-                    <div class="quick-chip-title" style="font-size:15px; margin-bottom:4px">灵感记录 💡</div>
+                <div class="quick-chip quick-chip-4" onclick="openQuickRecord('inspiration')" style="margin:0; width:100%; height:auto; padding:16px;">
+                    <div class="quick-chip-title" style="font-size:15px; margin-bottom:4px">灵感记录 ✨</div>
                     <div class="quick-chip-desc" style="font-size:11px; margin-bottom:10px">捕捉闪念瞬间，留住生活感悟</div>
                     <span class="quick-chip-tag" style="position:static; font-size:10px; padding:4px 10px">去写下</span>
                 </div>

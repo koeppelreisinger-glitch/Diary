@@ -3400,6 +3400,55 @@ body.mobile-page--login .login-card {
   font-size: 13px;
   font-weight: 500;
   transition: transform 0.15s ease;
+/* ── Chat Layout Mode Themes ── */
+.chat-layout.theme-expense {
+  --chat-accent: #F5A623;
+  --chat-bg-light: #F9F9F0;
+}
+.chat-layout.theme-inspiration {
+  --chat-accent: #5A76D8;
+  --chat-bg-light: #E2F4FD;
+}
+.chat-layout.theme-learning {
+  --chat-accent: #4CAF7D;
+  --chat-bg-light: #E2F4EC;
+}
+.chat-layout.theme-chat {
+  --chat-accent: #9D8FE0;
+  --chat-bg-light: #EDE8FD;
+}
+
+.chat-layout[class*="theme-"] .chat-layout__header {
+  background: var(--chat-bg-light);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  margin: -20px -20px 20px;
+  padding: 24px 20px 16px;
+  border-radius: 20px 20px 0 0;
+}
+
+.chat-layout[class*="theme-"] .chat-layout__title {
+  color: var(--chat-accent);
+}
+
+.chat-layout[class*="theme-"] .chat-input-label {
+  color: var(--chat-accent);
+  font-weight: 700;
+}
+
+.chat-layout[class*="theme-"] .chat-meta-pill {
+  background: #fff;
+  color: var(--chat-accent);
+  border: 1px solid var(--chat-bg-light);
+}
+
+.chat-layout[class*="theme-"] textarea:focus {
+  border-color: var(--chat-accent);
+  box-shadow: 0 0 0 3px rgba(var(--chat-accent), 0.1);
+}
+
+.chat-layout[class*="theme-"] .btn-primary {
+  background: var(--chat-accent);
+  border-color: var(--chat-accent);
 }
 
 /* ── 快速记录弹层 (Modal) ── */
