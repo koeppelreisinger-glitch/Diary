@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class AICompanionService:
-    async def generate_reply(self, messages: List[ConversationMessage]) -> str:
+    async def generate_reply(self, messages: List[ConversationMessage], mode: str | None = None) -> str:
         user_texts = [message.content for message in messages if message.role == "user"]
         if not user_texts:
             return "我随时准备好听你说说今天发生了什么。"
@@ -21,7 +21,7 @@ class AICompanionService:
 
         try:
             reply_text = await TokenHubChatService().create_text_completion(
-                self._build_chat_messages(messages),
+                self._build_chat_messages(messages, mode),
                 temperature=settings.TOKENHUB_TEMPERATURE,
             )
         except ErrorResponseAPIException:
@@ -43,9 +43,23 @@ class AICompanionService:
 
         return reply_text.strip()
 
-    def _build_chat_messages(self, messages: List[ConversationMessage]) -> list[dict]:
+    def _build_chat_messages(self, messages: List[ConversationMessage], mode: str | None = None) -> list[dict]:
+        system_content = settings.TOKENHUB_CHAT_SYSTEM_PROMPT
+
+        if mode == "expense":
+            system_content += "\n当前模式：记账。你是专业的“数字管家”，语调干练、准确、极简。确认金额和分类，不做冗长寒暄。"
+        elif mode == "inspiration":
+            system_content += "\n当前模式：灵感记录。你是细腻的“精神知音”，语调欣赏、诗意、优雅。肯定用户灵感的价值，通过共鸣引发思考。"
+        elif mode == "learning":
+            system_content += "\n当前模式：学习进度。你是热血的“进取同伴”，语调正向、有活力。强调积累的价值，提供即时的成就感反馈。"
+        elif mode == "chat":
+            system_content += "\n当前模式：闲聊天。你是温柔的“深夜电台”主理人，极具同理心、包容力。不做逻辑分析，只做情绪承接。"
+
+        # 通用改进：减少是非题
+        system_content += "\n注意：尽量减少“是与否”的封闭式提问。如果必须提问，请询问具有实质性内容的开放式问题，引导用户多描述细节、感受或过程。"
+
         chat_messages: list[dict] = [
-            {"role": "system", "content": settings.TOKENHUB_CHAT_SYSTEM_PROMPT}
+            {"role": "system", "content": system_content}
         ]
 
         recent_messages = messages[-settings.TOKENHUB_CHAT_CONTEXT_LIMIT:]
@@ -62,7 +76,7 @@ class AICompanionService:
                 parts: list[dict] = [
                     {
                         "type": "image_url",
-                        "image_url": {"url": image_url, "detail": "low"},
+                        "image_url": {"url": image_url, "detail": "auto"},
                     }
                 ]
                 if content:

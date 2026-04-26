@@ -445,6 +445,7 @@ async function sendQuickMessage() {
             content_type: 'text',
             content: content,
             is_supplement: false,
+            mode: currentQuickMode,
         };
 
         const response = await apiFetch(`/conversations/${todayPageState.conversation.id}/messages`, {

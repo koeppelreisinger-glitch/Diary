@@ -67,9 +67,18 @@ class DiaryAIService:
         conversation_text = self._serialize_conversation(messages)
         user_content = _FROM_MESSAGES_USER_TEMPLATE.format(conversation=conversation_text)
 
+        # 构造多模态内容：文字提示 + 图片列表
+        content_parts = [{"type": "text", "text": user_content}]
+        for msg in messages:
+            if msg.role == "user" and getattr(msg, "image_url", None):
+                content_parts.append({
+                    "type": "image_url",
+                    "image_url": {"url": msg.image_url, "detail": "auto"}
+                })
+
         chat_messages = [
             {"role": "system", "content": _ANALYSIS_SYSTEM_PROMPT},
-            {"role": "user", "content": user_content},
+            {"role": "user", "content": content_parts},
         ]
 
         logger.info(

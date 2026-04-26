@@ -206,7 +206,7 @@ class ConversationService:
         all_messages = (await session.execute(stmt_all_msgs)).scalars().all()
 
         from app.services.ai_companion_service import AICompanionService
-        ai_reply_text = await AICompanionService().generate_reply(all_messages)
+        ai_reply_text = await AICompanionService().generate_reply(all_messages, mode=request.mode)
 
         ai_seq = user_seq + 1
         ai_msg = ConversationMessage(

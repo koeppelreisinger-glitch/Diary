@@ -56,6 +56,7 @@ class SendMessageRequest(BaseSchema):
         default=False,
         description="是否为补写阶段的补充消息；True 时 completed 会话可继续收到消息"
     )
+    mode: Optional[str] = Field(None, description="快速记录模式：expense / inspiration / learning / chat")
 
 
 class SendMessageResponse(BaseSchema):
