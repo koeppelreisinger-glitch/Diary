@@ -54,9 +54,17 @@ class UserSetting(Base):
     )
     
     reminder_time: Mapped[time | None] = mapped_column(
-        Time(timezone=False), 
-        nullable=True, 
+        Time(timezone=False),
+        nullable=True,
         comment="每日提醒时间 (HH:MM)"
+    )
+
+    is_dark_mode: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="false",
+        comment="是否启用深色模式"
     )
 
     # 关联关系

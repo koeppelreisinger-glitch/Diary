@@ -83,35 +83,10 @@ class UserSettingService:
             setting.input_preference = pref
             updated = True
             
-        # 3. 更新 提醒主开关 (reminder_enabled)
-        if "reminder_enabled" in update_data:
-            setting.reminder_enabled = update_data["reminder_enabled"]
+        # 3. 更新 深色模式开关 (is_dark_mode)
+        if "is_dark_mode" in update_data:
+            setting.is_dark_mode = update_data["is_dark_mode"]
             updated = True
-            
-        # 4. 更新 提醒时间表 (reminder_time)
-        if "reminder_time" in update_data:
-            time_str = update_data["reminder_time"]
-            if time_str is None:
-                setting.reminder_time = None
-            else:
-                try:
-                    # 转化为 SQLAlchemy 支持落地的 datetime.time() 对象
-                    setting.reminder_time = datetime.strptime(time_str, "%H:%M").time()
-                except ValueError:
-                    raise ErrorResponseAPIException(
-                        status_code=400, 
-                        detail="非法的 reminder_time 格式，应当为 HH:MM"
-                    )
-            updated = True
-
-        # 5. 横跨字段核心业务判定（非常关键的联动状态检查）：
-        # 如果提醒当前被确立为 True，那么库中（可能是当前旧存在或者正在更新后）的 reminder_time 必须有实际合法值支撑。
-        if setting.reminder_enabled and not setting.reminder_time:
-            raise ErrorResponseAPIException(
-                status_code=400, 
-                detail="开启每日提醒时，必须设定有效的每日提醒时间（reminder_time）",
-                code=40002
-            )
         
         # 6. 显式控制事务
         if updated:
