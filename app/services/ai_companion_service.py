@@ -59,7 +59,7 @@ class AICompanionService:
         # 2. 注入回复风格优化指令
         chat_messages.append({
             "role": "system", 
-            "content": "【回复风格】保持自然对话感，避免冗长重复。优先直接回应用户内容。"
+            "content": "【回复风格】保持自然对话感，极其精简，避免冗长重复。字数严格控制在 30 字以内。优先直接回应用户内容。"
         })
         
         # 3. 处理模式特定的指令
