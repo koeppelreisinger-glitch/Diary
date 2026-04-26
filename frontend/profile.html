@@ -100,18 +100,8 @@
                         <span class="profile-toggle-slider"></span>
                     </label>
                 </div>
-                <div class="profile-row">
-                    <div class="profile-row-icon" style="background:#E2F4EC">🔔</div>
-                    <div class="profile-row-text">
-                        <div class="profile-row-label">每日提醒</div>
-                        <div class="profile-row-sub">晚上 21:00 记录今天</div>
-                    </div>
-                    <label class="profile-toggle">
-                        <input type="checkbox" checked>
-                        <span class="profile-toggle-slider"></span>
-                    </label>
-                </div>
-                <div class="profile-row" onclick="showComingSoon('导出数据')">
+
+                <div class="profile-row" onclick="exportData()">
                     <div class="profile-row-icon" style="background:#EDE8FD">📦</div>
                     <div class="profile-row-text">
                         <div class="profile-row-label">导出我的数据</div>
@@ -207,8 +197,20 @@
                     document.getElementById('statStreak').textContent = s.current_streak ?? '—';
                     document.getElementById('statEvents').textContent = s.total_events ?? '—';
                 }
+
+                // 加载设置项
+                loadSettings();
             } catch (e) {
                 console.warn('Profile load error:', e);
+            }
+        }
+
+        async function loadSettings() {
+            try {
+                const settings = await apiFetch('/settings');
+                document.getElementById('darkModeToggle').checked = settings.is_dark_mode;
+            } catch (e) {
+                console.warn('Load settings failed:', e);
             }
         }
 
@@ -245,7 +247,52 @@
             showToast(`✨ ${f}功能即将上线`);
         }
 
-        function toggleDarkMode(el) { showToast('✨ 深色模式即将上线'); el.checked = false; }
+        async function toggleDarkMode(el) {
+            const enabled = el.checked;
+            try {
+                await apiFetch('/settings', {
+                    method: 'PUT',
+                    body: JSON.stringify({ is_dark_mode: enabled })
+                });
+                showToast(enabled ? '🌙 深色模式已保存' : '☀️ 浅色模式已保存');
+            } catch (e) {
+                el.checked = !enabled;
+                showToast('❌ 更新设置失败');
+            }
+        }
+
+        async function exportData() {
+            if (!confirm('导出所有日记数据（JSON 格式）？')) return;
+            try {
+                showToast('📦 正在准备数据...');
+                const token = getToken();
+                // 直接使用 window.location.origin 拼接
+                const url = `${window.location.origin}/api/v1/history/export?format=json`;
+                
+                // 使用 a 标签触发下载
+                const a = document.createElement('a');
+                a.href = url;
+                // 注意：这里需要通过 query 传递 token 或者 cookie 认证
+                // 我们的 apiFetch 是带 header 的，但 window.open/a 标签不带
+                // 可以在后端支持 query token，或者使用 blob 下载
+                
+                const resp = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const blob = await resp.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                a.href = downloadUrl;
+                a.download = `echo_export_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(downloadUrl);
+                
+                showToast('✅ 导出成功');
+            } catch (e) {
+                showToast('❌ 导出失败: ' + e.message);
+            }
+        }
 
         function showToast(msg) {
             const t = document.getElementById('comingSoonToast');

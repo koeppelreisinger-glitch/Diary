@@ -46,17 +46,11 @@ class UserSetting(Base):
         comment="输入偏好：text / voice / mixed"
     )
     
-    reminder_enabled: Mapped[bool] = mapped_column(
+    is_dark_mode: Mapped[bool] = mapped_column(
         Boolean, 
         nullable=False, 
         default=False, 
-        comment="是否开启每日日记提醒"
-    )
-    
-    reminder_time: Mapped[time | None] = mapped_column(
-        Time(timezone=False), 
-        nullable=True, 
-        comment="每日提醒时间 (HH:MM)"
+        comment="是否开启深色模式"
     )
 
     # 关联关系
