@@ -46,22 +46,25 @@ class AICompanionService:
     def _build_chat_messages(self, messages: List[ConversationMessage], mode: str | None = None) -> list[dict]:
         system_content = settings.TOKENHUB_CHAT_SYSTEM_PROMPT
 
-        if mode == "expense":
-            system_content += "\n当前模式：记账。你是专业的“数字管家”，语调干练、准确、极简。确认金额和分类，不做冗长寒暄。"
-        elif mode == "inspiration":
-            system_content += "\n当前模式：灵感记录。你是细腻的“精神知音”，语调欣赏、诗意、优雅。肯定用户灵感的价值，通过共鸣引发思考。"
-        elif mode == "learning":
-            system_content += "\n当前模式：学习进度。你是热血的“进取同伴”，语调正向、有活力。强调积累的价值，提供即时的成就感反馈。"
-        elif mode == "chat":
-            system_content += "\n当前模式：闲聊天。你是温柔的“深夜电台”主理人，极具同理心、包容力。不做逻辑分析，只做情绪承接。"
-
-        # 通用改进：减少是非题
-        system_content += "\n注意：尽量减少“是与否”的封闭式提问。如果必须提问，请询问具有实质性内容的开放式问题，引导用户多描述细节、感受或过程。"
-
+        # 回复风格优化：保持自然，避免废话
+        system_content += "\n【回复风格】保持自然对话感，避免冗长重复。优先直接回应用户内容。"
+        
+        if mode:
+            # 模式下的特定指令
+            mode_prompts = {
+                "expense": "记账模式：你是干练管家，仅确认金额分类，不寒暄。",
+                "inspiration": "灵感模式：你是细腻知音，肯定价值并引发深度共鸣。",
+                "learning": "学习模式：你是热血同伴，强调积累并给予成就反馈。",
+                "chat": "闲聊模式：你是温柔电台，只做情绪承接，不做逻辑分析。"
+            }
+            system_content += f"\n{mode_prompts.get(mode, '')}"
+            system_content += "\n提问引导：少量是非题。询问实质性开放问题，引导描述细节、感受或过程。"
+        
         chat_messages: list[dict] = [
             {"role": "system", "content": system_content}
         ]
 
+        # 使用默认的上下文长度以保证对话质量
         recent_messages = messages[-settings.TOKENHUB_CHAT_CONTEXT_LIMIT:]
         for message in recent_messages:
             role = "assistant" if message.role == "ai" else "user"
@@ -89,21 +92,4 @@ class AICompanionService:
 
         return chat_messages
     def _fallback_reply(self, messages: List[ConversationMessage]) -> str:
-        latest_user_text = next(
-            (message.content for message in reversed(messages) if message.role == "user" and message.content),
-            "",
-        )
-
-        if any(keyword in latest_user_text for keyword in ["累", "疲惫", "心累"]):
-            return "听起来你今天真的很累。更像是身体累，还是心里累？有没有哪个瞬间让你特别想停下来？"
-
-        if any(keyword in latest_user_text for keyword in ["开心", "高兴", "满足", "放松"]):
-            return "这段好心情很值得记下来。是什么事情让你有这种感觉？当时你和谁在一起，或者你在哪里？"
-
-        if any(keyword in latest_user_text for keyword in ["开会", "工作", "公司", "客户", "上班"]):
-            return "听起来今天工作内容不少。最让你在意的是哪件事？它让你更紧张、疲惫，还是其实也有一点成就感？"
-
-        if any(keyword in latest_user_text for keyword in ["咖啡", "奶茶", "外卖", "吃饭", "打车"]):
-            return "我先帮你记下这个生活片段。那是在什么地方？大概花了多少钱，和谁一起吗？"
-
         return "我记下来了。然后呢？今天还有哪个人、哪个地方，或者哪件小事，是你其实不想把它忘掉的？"
