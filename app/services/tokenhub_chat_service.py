@@ -17,6 +17,7 @@ class TokenHubChatService:
         *,
         temperature: float,
         response_format: dict | None = None,
+        max_tokens: int | None = None,
     ) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "model": settings.TOKENHUB_MODEL,
@@ -24,6 +25,8 @@ class TokenHubChatService:
             "temperature": temperature,
             "stream": False,
         }
+        if max_tokens:
+            payload["max_tokens"] = max_tokens
         # doc14 §3.3/§3.4: 后台 AI 调用强制 JSON 输出时传入 response_format
         if response_format:
             payload["response_format"] = response_format
@@ -35,9 +38,13 @@ class TokenHubChatService:
         *,
         temperature: float,
         response_format: dict | None = None,
+        max_tokens: int | None = None,
     ) -> str:
         response_data = await self.create_chat_completion(
-            messages, temperature=temperature, response_format=response_format
+            messages,
+            temperature=temperature,
+            response_format=response_format,
+            max_tokens=max_tokens,
         )
         return self.extract_text_content(response_data).strip()
 
@@ -67,32 +74,43 @@ class TokenHubChatService:
 
         return str(content)
 
+    _client: httpx.AsyncClient | None = None
+    
+    @classmethod
+    def get_client(cls) -> httpx.AsyncClient:
+        if cls._client is None or cls._client.is_closed:
+            cls._client = httpx.AsyncClient(
+                timeout=settings.TOKENHUB_TIMEOUT_SECONDS,
+                limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
+                follow_redirects=True
+            )
+        return cls._client
+
     async def _post_chat_completion(self, payload: dict[str, Any]) -> dict[str, Any]:
         headers = {
             "Authorization": self._build_authorization_header(),
             "Content-Type": "application/json",
         }
-
+        client = self.get_client()
         try:
-            async with httpx.AsyncClient(timeout=settings.TOKENHUB_TIMEOUT_SECONDS) as client:
-                response = await client.post(
-                    settings.TOKENHUB_CHAT_COMPLETIONS_URL,
-                    headers=headers,
-                    json=payload,
+            response = await client.post(
+                settings.TOKENHUB_CHAT_COMPLETIONS_URL,
+                headers=headers,
+                json=payload,
+            )
+            if response.status_code != 200:
+                detail = response.text
+                logger.error(
+                    "TokenHub request failed: status=%s body=%s",
+                    response.status_code,
+                    detail[:500],
                 )
-                if response.status_code != 200:
-                    detail = response.text
-                    logger.error(
-                        "TokenHub request failed: status=%s body=%s",
-                        response.status_code,
-                        detail[:500],
-                    )
-                    raise ErrorResponseAPIException(
-                        status_code=502,
-                        detail=f"AI 请求失败，状态码 {response.status_code}",
-                        code=50203,
-                    )
-                return response.json()
+                raise ErrorResponseAPIException(
+                    status_code=502,
+                    detail=f"AI 请求失败，状态码 {response.status_code}",
+                    code=50203,
+                )
+            return response.json()
 
         except ErrorResponseAPIException:
             raise

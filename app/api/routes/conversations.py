@@ -69,12 +69,17 @@ async def send_message(
     return ApiResponse(data=resp)
 
 
+from fastapi import APIRouter, Query, BackgroundTasks
+
 @router.post("/conversations/{conversation_id}/complete", response_model=ApiResponse[CompleteConversationResponse], tags=["Conversations"])
 async def complete_conversation(
     conversation_id: uuid.UUID,
     session: SessionDep,
-    current_user: CurrentUser
+    current_user: CurrentUser,
+    background_tasks: BackgroundTasks,
 ):
-    """结束今日记录，并直接连通总结服务完成日记录分析和入库闭环"""
-    resp = await ConversationService.complete_conversation(session, conversation_id, current_user.id)
+    """结束今日记录，并将总结生成任务转入后台异步执行，以提升前端响应速度"""
+    resp = await ConversationService.complete_conversation_and_trigger_background(
+        session, conversation_id, current_user.id, background_tasks
+    )
     return ApiResponse(data=resp)

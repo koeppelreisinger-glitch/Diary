@@ -24,6 +24,17 @@ from app.core.exceptions import ErrorResponseAPIException, NotFoundException, Fo
 
 logger = logging.getLogger(__name__)
 
+async def run_background_summary(conversation_id: uuid.UUID, user_id: uuid.UUID):
+    """后台异步执行总结生成，确保主线程快速返回"""
+    from app.core.database import AsyncSessionLocal
+    from app.services.summary_generation_service import SummaryGenerationService
+    async with AsyncSessionLocal() as db:
+        try:
+            summary_svc = SummaryGenerationService()
+            await summary_svc.generate_for_conversation(db, conversation_id, {"id": user_id})
+        except Exception as e:
+            logger.exception(f"Background summary generation failed: {e}")
+
 class ConversationService:
     @staticmethod
     async def _get_today_date(session: AsyncSession, user_id: uuid.UUID) -> datetime.date:
@@ -272,4 +283,39 @@ class ConversationService:
             status=conv.status,
             updated_at=conv.updated_at,
             daily_record=record
+        )
+
+    @staticmethod
+    async def complete_conversation_and_trigger_background(
+        session: AsyncSession, 
+        conversation_id: uuid.UUID, 
+        user_id: uuid.UUID,
+        background_tasks: Any
+    ) -> CompleteConversationResponse:
+        """异步版本：仅更新状态为 completing，将生成任务转入后台"""
+        conv = await ConversationService._get_conversation_secured(session, conversation_id, user_id)
+ 
+        if conv.status in ("completing", "completed"):
+            raise ErrorResponseAPIException(status_code=409, detail="会话已处于结束状态", code=40903)
+ 
+        conv.status = "completing"
+        conv.updated_at = utc_now()
+ 
+        try:
+            await session.commit()
+            await session.refresh(conv)
+        except Exception:
+            await session.rollback()
+            raise
+ 
+        logger.info(f"Triggered background summary generation for conversation_id: {conversation_id}")
+ 
+        # 挂载后台任务
+        background_tasks.add_task(run_background_summary, conversation_id, user_id)
+ 
+        return CompleteConversationResponse(
+            conversation_id=conv.id,
+            status=conv.status,
+            updated_at=conv.updated_at,
+            daily_record=None  # 后台生成，初始返回空
         )

@@ -69,12 +69,18 @@ class DiaryAIService:
 
         # 构造多模态内容：文字提示 + 图片列表
         content_parts = [{"type": "text", "text": user_content}]
-        for msg in messages:
+        # 构造多模态内容：文字提示 + 图片列表（限最近5张图片，加速处理）
+        content_parts = [{"type": "text", "text": user_content}]
+        images_found = 0
+        for msg in reversed(messages):
             if msg.role == "user" and getattr(msg, "image_url", None):
-                content_parts.append({
+                content_parts.insert(1, {
                     "type": "image_url",
                     "image_url": {"url": msg.image_url, "detail": "auto"}
                 })
+                images_found += 1
+                if images_found >= 5:
+                    break
 
         chat_messages = [
             {"role": "system", "content": _ANALYSIS_SYSTEM_PROMPT},
@@ -92,6 +98,7 @@ class DiaryAIService:
             chat_messages,
             temperature=settings.TOKENHUB_SUMMARY_TEMPERATURE,
             response_format={"type": "json_object"},  # doc14 §3.4.2: 强制合法 JSON
+            max_tokens=1500,  # 限制最大长度，加速输出
         )
 
         logger.info(
@@ -122,6 +129,7 @@ class DiaryAIService:
             chat_messages,
             temperature=settings.TOKENHUB_SUMMARY_TEMPERATURE,
             response_format={"type": "json_object"},  # doc14 §3.4.2: 强制合法 JSON
+            max_tokens=1500,  # 限制最大长度，加速输出
         )
 
         logger.info(
