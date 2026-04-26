@@ -89,6 +89,22 @@ class ConversationService:
     async def create_today_conversation(session: AsyncSession, user_id: uuid.UUID) -> CreateConversationResponse:
         today_date = await ConversationService._get_today_date(session, user_id)
 
+        # 1. 优先检查今日是否已有会话（幂等性保护，避免 IntegrityError 导致的 500）
+        stmt_check = select(Conversation).where(
+            Conversation.user_id == user_id,
+            Conversation.record_date == today_date,
+            Conversation.deleted_at.is_(None)
+        )
+        existing_conv = (await session.execute(stmt_check)).scalar_one_or_none()
+        if existing_conv:
+            return CreateConversationResponse(
+                id=existing_conv.id,
+                status=existing_conv.status,
+                record_date=existing_conv.record_date,
+                created_at=existing_conv.created_at
+            )
+
+        # 2. 正常创建逻辑
         new_conv = Conversation(
             user_id=user_id,
             record_date=today_date,
@@ -97,30 +113,24 @@ class ConversationService:
         session.add(new_conv)
 
         # ── 预加载指令 ──────────────────────────────────────────────────
-        # 当会话创建时，预先插入系统指令作为第 0 条消息，实现「预读取」
         from app.core.config import settings
         system_msg = ConversationMessage(
             conversation_id=new_conv.id,
             role="system",
             content_type="text",
             content=settings.TOKENHUB_CHAT_SYSTEM_PROMPT,
-            sequence_number=0  # 系统指令序号为 0
+            sequence_number=0
         )
         session.add(system_msg)
-        # ──────────────────────────────────────────────────────────────
 
         try:
             await session.commit()
             await session.refresh(new_conv)
         except IntegrityError:
+            # 极低概率的并发穿透：回滚并再次查询
             await session.rollback()
-            # 幂等性处理：如果已经存在，则查询并返回已存在的会话
-            stmt_existing = select(Conversation).where(
-                Conversation.user_id == user_id,
-                Conversation.record_date == today_date,
-                Conversation.deleted_at.is_(None)
-            )
-            existing_conv = (await session.execute(stmt_existing)).scalar_one()
+            result = await session.execute(stmt_check)
+            existing_conv = result.scalar_one()
             return CreateConversationResponse(
                 id=existing_conv.id,
                 status=existing_conv.status,
