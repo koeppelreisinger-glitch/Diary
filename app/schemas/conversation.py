@@ -71,4 +71,4 @@ class CompleteConversationResponse(BaseSchema):
     conversation_id: uuid.UUID
     status: str
     updated_at: datetime
-    daily_record: DailyRecordDetailResponse
+    daily_record: Optional[DailyRecordDetailResponse] = Field(None, description="生成的日记录详情（异步生成时可能返回空）")

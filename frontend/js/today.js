@@ -110,7 +110,7 @@ function renderStateNotStarted() {
                 <div class="state-card__title">今天想从哪里开始说？</div>
                 <p class="state-card__text">你今天还没有开始记录。点一下按钮，就可以进入今天的对话记录。</p>
                 <div class="state-card__actions">
-                    <button class="btn btn-primary" onclick="startTodayConversation()">开始今日记录</button>
+                    <button class="btn btn-primary" onclick="startTodayConversation(event)">开始今日记录</button>
                 </div>
             </div>
         </div>
@@ -267,8 +267,8 @@ async function loadTodayMessages(conversationId) {
     todayPageState.messages = data.messages || [];
 }
 
-async function startTodayConversation() {
-    const btn = event?.target;
+async function startTodayConversation(e) {
+    const btn = e?.target || window.event?.target;
     if (btn && btn.tagName === 'BUTTON') {
         btn.disabled = true;
         btn.textContent = '正在开启...';
