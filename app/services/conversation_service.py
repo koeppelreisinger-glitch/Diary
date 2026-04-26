@@ -70,6 +70,7 @@ class ConversationService:
 
         msg_count_stmt = select(func.count(ConversationMessage.id)).where(
             ConversationMessage.conversation_id == conv.id,
+            ConversationMessage.role != "system",
             ConversationMessage.deleted_at.is_(None)
         )
         msg_count = (await session.execute(msg_count_stmt)).scalar() or 0
@@ -176,12 +177,14 @@ class ConversationService:
 
         total_stmt = select(func.count(ConversationMessage.id)).where(
             ConversationMessage.conversation_id == conversation_id,
+            ConversationMessage.role != "system",
             ConversationMessage.deleted_at.is_(None)
         )
         total_count = (await session.execute(total_stmt)).scalar() or 0
 
         stmt = select(ConversationMessage).where(
             ConversationMessage.conversation_id == conversation_id,
+            ConversationMessage.role != "system",
             ConversationMessage.deleted_at.is_(None)
         )
         if before_sequence is not None:

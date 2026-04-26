@@ -235,7 +235,9 @@ function renderStateRecording() {
 }
 
 function renderTodayMessages(messages) {
-    if (!messages.length) {
+    const visibleMessages = (messages || []).filter(message => message.role === 'user' || message.role === 'ai');
+
+    if (!visibleMessages.length) {
         return `
             <div class="chat-empty">
                 <div class="chat-empty__title">今天的对话还没开始</div>
@@ -244,7 +246,7 @@ function renderTodayMessages(messages) {
         `;
     }
 
-    return messages.map((message) => {
+    return visibleMessages.map((message) => {
         const isUser = message.role === 'user';
         const imgHtml = (isUser && message.image_url)
             ? `<div style="max-width:220px;border-radius:10px;overflow:hidden;margin-bottom:6px">
@@ -264,7 +266,7 @@ function renderTodayMessages(messages) {
 
 async function loadTodayMessages(conversationId) {
     const data = await apiFetch(`/conversations/${conversationId}/messages?limit=100`);
-    todayPageState.messages = data.messages || [];
+    todayPageState.messages = (data.messages || []).filter(message => message.role === 'user' || message.role === 'ai');
 }
 
 async function startTodayConversation(e) {
