@@ -114,6 +114,7 @@ class HistoryService:
         stmt = select(
             DailyRecord.id,
             DailyRecord.record_date,
+            DailyRecord.body_text,
             DailyRecord.summary_text,
             DailyRecord.emotion_overall_score,
             DailyRecord.keywords,
@@ -128,6 +129,7 @@ class HistoryService:
             HistoryRecordItemResponse(
                 id=r.id,
                 record_date=r.record_date,
+                body_text=r.body_text or None,
                 summary_text=r.summary_text or "",
                 emotion_overall_score=r.emotion_overall_score,
                 keywords=r.keywords or [],

@@ -84,14 +84,15 @@ function renderLatestDiary(records) {
 }
 
 function renderDiaryFeature(record) {
-    const quote = pickMemoryQuote(record.summary_text || '');
-    const preview = buildPreview(record.summary_text || '', 150);
+    const diaryText = record.body_text || record.summary_text || '';
+    const quote = pickMemoryQuote(diaryText);
+    const preview = buildPreview(diaryText, 150);
     const keywords = renderKeywordTags(record.keywords || []);
     return `
         <article class="memory-feature" onclick="goToDetail('${record.record_date}')">
             <div class="memory-feature-head">
                 <div>
-                    <div class="memory-date">${formatDateCN(record.record_date)}</div>
+                    <div class="memory-date">${formatMemoryDate(record.record_date)}</div>
                     <div class="memory-mood">${emotionMood(record.emotion_overall_score)}</div>
                 </div>
                 <span class="memory-read-link">继续阅读</span>
@@ -113,7 +114,7 @@ function renderQuoteStream(records) {
 
     const quotes = records.map(record => ({
         record,
-        quote: pickMemoryQuote(record.summary_text || ''),
+        quote: pickMemoryQuote(record.body_text || record.summary_text || ''),
     })).filter(item => item.quote);
 
     const visible = quotes.slice(memoryState.quoteOffset, memoryState.quoteOffset + 3);
@@ -161,15 +162,19 @@ function renderDiaryTimeline(data) {
 }
 
 function renderDiaryTimelineItem(record) {
-    const quote = pickMemoryQuote(record.summary_text || '');
-    const preview = buildPreview(record.summary_text || '', 120);
+    const diaryText = record.body_text || record.summary_text || '';
+    const quote = pickMemoryQuote(diaryText);
+    const preview = buildPreview(diaryText, 120);
     return `
         <article class="memory-diary-item" onclick="goToDetail('${record.record_date}')">
-            <div class="memory-diary-date">${formatDateCN(record.record_date)}</div>
-            <div class="memory-diary-mood">${emotionMood(record.emotion_overall_score)}</div>
-            <div class="memory-diary-quote">“${escapeHtml(quote)}”</div>
-            <div class="memory-diary-preview">${escapeHtml(preview)}</div>
-            ${renderKeywordTags(record.keywords || []) ? `<div class="memory-keywords">${renderKeywordTags(record.keywords || [])}</div>` : ''}
+            <div class="memory-timeline-dot"></div>
+            <div class="memory-diary-card">
+                <div class="memory-diary-date">${formatMemoryDate(record.record_date)}</div>
+                <div class="memory-diary-mood">${emotionMood(record.emotion_overall_score)}</div>
+                <div class="memory-diary-quote">“${escapeHtml(quote)}”</div>
+                <div class="memory-diary-preview">${escapeHtml(preview)}</div>
+                ${renderKeywordTags(record.keywords || []) ? `<div class="memory-keywords">${renderKeywordTags(record.keywords || [])}</div>` : ''}
+            </div>
         </article>`;
 }
 
@@ -276,6 +281,13 @@ function emotionMood(score) {
 
 function renderKeywordTags(keywords) {
     return (keywords || []).slice(0, 4).map(k => `<span class="keyword-tag">${escapeHtml(k)}</span>`).join('');
+}
+
+function formatMemoryDate(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr + 'T00:00:00');
+    const weekDays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+    return `${d.getMonth() + 1}月${d.getDate()}日 ${weekDays[d.getDay()]}`;
 }
 
 function goToDetail(recordDate) {

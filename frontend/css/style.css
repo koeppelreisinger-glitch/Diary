@@ -512,27 +512,30 @@ body.mobile-page .mobile-stage .state-card {
 /* ── 回忆页：日记化呈现（沿用 Echo 视觉体系，局部增加春日氛围） ── */
 .memory-hero {
   position: relative;
-  margin: 14px 16px 18px;
-  padding: 22px 20px;
-  min-height: 166px;
+  margin: 16px 16px 26px;
+  padding: 34px 28px;
+  min-height: 188px;
   overflow: hidden;
   border: 1px solid var(--border-light);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   background:
-    radial-gradient(circle at 88% 18%, rgba(245, 166, 35, .28) 0 34px, transparent 36px),
-    linear-gradient(135deg, var(--bg-card) 0%, #fff8ec 48%, #f1f7ea 100%);
-  box-shadow: var(--shadow);
+    radial-gradient(circle at 86% 22%, rgba(255, 216, 132, 0.42), transparent 26%),
+    radial-gradient(circle at 12% 88%, rgba(141, 196, 137, 0.18), transparent 32%),
+    linear-gradient(135deg, rgba(255, 248, 226, 0.92), rgba(239, 250, 235, 0.78));
+  box-shadow: 0 18px 42px rgba(88, 113, 80, 0.08);
 }
 
 .memory-hero::after {
   content: '';
   position: absolute;
-  left: -12%;
-  right: -12%;
-  bottom: -34px;
-  height: 80px;
-  background: rgba(76, 175, 125, .10);
-  border-radius: 50% 50% 0 0;
+  right: 24px;
+  bottom: 18px;
+  width: 78px;
+  height: 34px;
+  border: solid rgba(76, 175, 125, .18);
+  border-width: 0 0 2px 2px;
+  border-radius: 0 0 0 100%;
+  transform: rotate(-10deg);
 }
 
 .memory-hero-copy {
@@ -553,31 +556,31 @@ body.mobile-page .mobile-stage .state-card {
 .memory-hero h1 {
   margin: 0;
   color: var(--text-primary);
-  font-size: 28px;
-  line-height: 1.15;
+  font-size: 34px;
+  line-height: 1.2;
   font-weight: 800;
 }
 
 .memory-hero p {
-  margin: 12px 0 0;
+  margin: 10px 0 0;
   color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.75;
+  font-size: 15px;
+  line-height: 1.7;
 }
 
 .memory-sun {
   position: absolute;
-  right: 20px;
-  top: 18px;
-  width: 54px;
-  height: 54px;
+  right: 24px;
+  top: 24px;
+  width: 62px;
+  height: 62px;
   border-radius: 50%;
-  background: rgba(245, 166, 35, .26);
-  box-shadow: 0 0 0 14px rgba(245, 166, 35, .08);
+  background: rgba(245, 166, 35, .20);
+  box-shadow: 0 0 0 18px rgba(245, 166, 35, .06);
 }
 
 .memory-section {
-  margin: 0 16px 24px;
+  margin: 0 16px 30px;
   padding-top: 2px;
 }
 
@@ -606,10 +609,11 @@ body.mobile-page .mobile-stage .state-card {
 }
 
 .memory-search-section {
-  padding: 16px;
-  border: 1px solid var(--border-light);
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, .72);
   border-radius: var(--radius-lg);
-  background: var(--bg-card);
+  background: rgba(255, 255, 255, .72);
+  backdrop-filter: blur(12px);
   box-shadow: var(--shadow);
 }
 
@@ -623,8 +627,8 @@ body.mobile-page .mobile-stage .state-card {
   flex: 1;
   min-width: 0;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 12px 13px;
+  border-radius: 18px;
+  padding: 14px 15px;
   font-size: 14px;
   font-family: var(--font-family);
   color: var(--text-primary);
@@ -645,7 +649,6 @@ body.mobile-page .mobile-stage .state-card {
 }
 
 .memory-feature,
-.memory-diary-item,
 .memory-empty,
 .memory-photo-group {
   background: var(--bg-card);
@@ -655,9 +658,12 @@ body.mobile-page .mobile-stage .state-card {
 }
 
 .memory-feature {
-  padding: 22px;
+  padding: 26px 24px;
   cursor: pointer;
-  border-left: 4px solid rgba(76, 175, 125, .45);
+  border-left: 4px solid rgba(76, 175, 125, .42);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .96), rgba(255, 252, 245, .9)),
+    var(--bg-card);
 }
 
 .memory-feature-head {
@@ -693,7 +699,7 @@ body.mobile-page .mobile-stage .state-card {
 }
 
 .memory-quote {
-  margin: 20px 0 14px;
+  margin: 24px 0 16px;
   color: var(--text-primary);
   font-size: 18px;
   font-weight: 700;
@@ -728,20 +734,23 @@ body.mobile-page .mobile-stage .state-card {
   background:
     linear-gradient(180deg, rgba(245, 166, 35, .045), transparent 52%),
     var(--bg-card);
-  padding: 16px;
+  padding: 18px 18px 17px;
   cursor: pointer;
   font-family: var(--font-family);
   box-shadow: var(--shadow);
 }
 
 .memory-quote-card::before {
-  content: '';
+  content: '“';
   display: block;
-  width: 28px;
-  height: 3px;
-  margin-bottom: 10px;
-  border-radius: 999px;
-  background: rgba(76, 175, 125, .38);
+  width: auto;
+  height: auto;
+  margin-bottom: 8px;
+  color: rgba(245, 166, 35, .55);
+  background: transparent;
+  font-size: 28px;
+  line-height: 1;
+  font-weight: 800;
 }
 
 .memory-quote-text {
@@ -760,12 +769,46 @@ body.mobile-page .mobile-stage .state-card {
 }
 
 .memory-timeline {
+  position: relative;
   display: grid;
-  gap: 16px;
+  gap: 18px;
+  padding-left: 20px;
+}
+
+.memory-timeline::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 7px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(245, 166, 35, .34), rgba(76, 175, 125, .22));
 }
 
 .memory-diary-item {
+  position: relative;
+  cursor: pointer;
+}
+
+.memory-timeline-dot {
+  position: absolute;
+  left: -20px;
+  top: 20px;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: var(--bg-card);
+  border: 3px solid rgba(245, 166, 35, .72);
+  box-shadow: 0 0 0 4px rgba(245, 166, 35, .10);
+}
+
+.memory-diary-card {
   padding: 18px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
   cursor: pointer;
 }
 
@@ -821,8 +864,8 @@ body.mobile-page .mobile-stage .state-card {
 }
 
 .memory-photo-group {
-  padding: 14px;
-  margin-bottom: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
   background:
     linear-gradient(180deg, rgba(76, 175, 125, .045), transparent 54%),
     var(--bg-card);
@@ -833,6 +876,17 @@ body.mobile-page .mobile-stage .state-card {
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 700;
+}
+
+.memory-photo-subsection + .memory-photo-subsection {
+  margin-top: 16px;
+}
+
+.memory-photo-subtitle {
+  margin: 0 0 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .memory-photo-grid {

@@ -26,12 +26,11 @@
 
         <div class="has-bottom-nav" style="overflow-y:auto">
 
-            <!-- 春日回忆头图区 -->
             <section class="memory-hero">
                 <div class="memory-hero-copy">
                     <div class="memory-hero-kicker" id="todayDateLabel">Memories</div>
-                    <h1 id="memGreeting">回忆</h1>
-                    <p>在阳光好的时候，读回自己的一天。日记、照片和那些突然留下来的句子，都在这里慢慢发芽。</p>
+                    <h1>回忆</h1>
+                    <p>重新读回某一天，听见当时的自己。</p>
                 </div>
                 <div class="memory-sun" aria-hidden="true"></div>
             </section>
@@ -55,7 +54,7 @@
                 <div class="memory-section-head">
                     <div>
                         <div class="memory-section-title">最近一篇日记</div>
-                        <div class="memory-section-sub">先从最近的一天开始，慢慢读回自己。</div>
+                        <div class="memory-section-sub">最近留下的自己</div>
                     </div>
                     <span class="section-row-action" onclick="location.href='today.html'">去记录 →</span>
                 </div>
@@ -71,38 +70,35 @@
                 <div class="memory-section-head">
                     <div>
                         <div class="memory-section-title">记忆摘录</div>
-                        <div class="memory-section-sub">有些句子，会把人一下子带回那一天。</div>
+                        <div class="memory-section-sub">那些一句话就能想起的时刻。</div>
                     </div>
                     <span class="section-row-action" onclick="shuffleQuotes()">换一批</span>
                 </div>
                 <div id="quoteStreamContainer"></div>
             </section>
 
-            <section class="memory-section" id="photoTodayRow">
+            <section class="memory-section">
                 <div class="memory-section-head">
                     <div>
-                        <div class="memory-section-title">照片里的今天</div>
+                        <div class="memory-section-title">照片回忆</div>
                         <div class="memory-section-sub">有些记忆不是写下来的，是被拍下来的。</div>
                     </div>
                 </div>
-                <div id="photoTodayContainer"></div>
-            </section>
-
-            <section class="memory-section" id="photoStreamRow">
-                <div class="memory-section-head">
-                    <div>
-                        <div class="memory-section-title">记忆相片</div>
-                        <div class="memory-section-sub">那些和日记一起留下来的画面。</div>
-                    </div>
+                <div class="memory-photo-subsection" id="photoTodayRow">
+                    <div class="memory-photo-subtitle">照片里的今天</div>
+                    <div id="photoTodayContainer"></div>
                 </div>
-                <div id="photoStreamContainer"></div>
+                <div class="memory-photo-subsection" id="photoStreamRow">
+                    <div class="memory-photo-subtitle">记忆相片</div>
+                    <div id="photoStreamContainer"></div>
+                </div>
             </section>
 
             <section class="memory-section">
                 <div class="memory-section-head">
                     <div>
                         <div class="memory-section-title">日记时间流</div>
-                        <div class="memory-section-sub">一天天往回翻，生活会露出自己的纹理。</div>
+                        <div class="memory-section-sub">按时间慢慢翻回去。</div>
                     </div>
                 </div>
                 <div id="diaryTimelineContainer">
@@ -152,9 +148,6 @@
         async function loadGreeting() {
             try {
                 const user = await apiFetch('/users/me');
-                const nickname = user.nickname || user.phone || '';
-                const el = document.getElementById('memGreeting');
-                if (el && nickname) el.textContent = nickname + ' 的回忆';
             } catch (e) { /* 静默失败 */ }
         }
     </script>

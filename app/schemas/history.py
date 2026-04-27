@@ -12,6 +12,7 @@ from app.schemas.common import BaseSchema
 class HistoryRecordItemResponse(BaseSchema):
     id: uuid.UUID
     record_date: date
+    body_text: Optional[str] = None
     summary_text: str
     emotion_overall_score: int
     keywords: List[str]
