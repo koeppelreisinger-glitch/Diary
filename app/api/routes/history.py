@@ -66,7 +66,7 @@ async def get_history_daily_records(
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
     start_date: Optional[str] = Query(None, description="起始日期，支持 YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD / YYYYMMDD"),
     end_date: Optional[str] = Query(None, description="结束日期，支持 YYYY-MM-DD / YYYY/MM/DD / YYYY.MM.DD / YYYYMMDD"),
-    keyword: Optional[str] = Query(None, description="关键词模糊匹配日记正文、摘要、关键词、备注、事件、灵感"),
+    keyword: Optional[str] = Query(None, description="关键词模糊匹配日记正文、摘要、关键词、备注、事件、灵感、地点、消费描述"),
     tag: Optional[str] = Query(None, description="按有效灵感精准筛选"),
     min_emotion_score: Optional[int] = Query(None, description="最低情绪分"),
     max_emotion_score: Optional[int] = Query(None, description="最高情绪分")

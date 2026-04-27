@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>搜索记忆 — Echo</title>
+    <meta name="description" content="Echo 回忆搜索结果">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="mobile-page">
+    <div class="mobile-stage">
+
+        <header class="app-header">
+            <div class="app-header-logo">Echo</div>
+            <div class="app-header-actions">
+                <button class="btn btn-ghost btn-sm" onclick="location.href='index.html'">回忆</button>
+                <button class="btn btn-ghost btn-sm" onclick="logout()">退出</button>
+            </div>
+        </header>
+
+        <div class="has-bottom-nav" style="overflow-y:auto">
+            <section class="search-hero">
+                <button class="search-back" onclick="location.href='index.html'">← 返回回忆</button>
+                <div class="search-hero-kicker">Search Memories</div>
+                <h1>搜索记忆</h1>
+                <p id="searchHeroDesc">把一句话、一个人、一件小事重新翻出来。</p>
+            </section>
+
+            <section class="memory-section memory-search-section search-page-box">
+                <div class="memory-search">
+                    <input type="search" id="searchPageInput" placeholder="搜索一句话、一个人、一件小事……"
+                        onkeydown="if(event.key==='Enter') submitMemorySearchPage()">
+                    <button class="btn btn-primary btn-sm" onclick="submitMemorySearchPage()">搜索</button>
+                </div>
+                <div class="memory-search-hint" id="searchPageStatus">准备搜索...</div>
+            </section>
+
+            <section class="memory-section">
+                <div class="memory-section-head">
+                    <div>
+                        <div class="memory-section-title">相关日记</div>
+                        <div class="memory-section-sub">搜索日记正文、摘要、关键词、备注和当天线索。</div>
+                    </div>
+                </div>
+                <div id="searchResultContainer">
+                    <div class="status-box" style="padding:28px 0">
+                        <div class="loading-spinner"></div>
+                        <div class="text" style="margin-top:10px;font-size:13px">正在翻找记忆...</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <nav class="app-bottom-nav">
+            <a class="app-nav-item" href="today.html">
+                <span class="app-nav-icon">✍️</span>
+                <span class="app-nav-label">今日</span>
+            </a>
+            <a class="app-nav-item active" href="index.html">
+                <span class="app-nav-icon">📖</span>
+                <span class="app-nav-label">回忆</span>
+            </a>
+            <a class="app-nav-item" href="trace.html">
+                <span class="app-nav-icon">🔍</span>
+                <span class="app-nav-label">寻迹</span>
+            </a>
+            <a class="app-nav-item" href="profile.html">
+                <span class="app-nav-icon">👤</span>
+                <span class="app-nav-label">我</span>
+            </a>
+        </nav>
+
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/search.js"></script>
+    <script>
+        if (!requireAuth()) { /* 跳登录 */ }
+        else { initMemorySearchPage(); }
+    </script>
+</body>
+
+</html>

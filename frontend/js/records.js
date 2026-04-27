@@ -119,9 +119,14 @@ function renderMemorySearchResult(data) {
         return;
     }
     const total = Number(data.total_count || 0);
-    status.textContent = total > 0
-        ? `找到 ${total} 段和“${memoryState.keyword}”有关的记忆。`
-        : '没有找到这段记忆，换一个词试试。';
+    if (total > 0) {
+        status.innerHTML = `
+            找到 ${total} 段和“${escapeHtml(memoryState.keyword)}”有关的记忆。
+            <button class="memory-search-view" onclick="goToMemorySearch()">点击查看</button>
+        `;
+    } else {
+        status.textContent = '没有找到这段记忆，换一个词试试。';
+    }
 }
 
 function renderLatestDiary(records) {
@@ -355,6 +360,11 @@ function formatMemoryDate(dateStr) {
 
 function goToDetail(recordDate) {
     window.location.href = `detail.html?date=${recordDate}`;
+}
+
+function goToMemorySearch() {
+    if (!memoryState.keyword) return;
+    window.location.href = `search.html?q=${encodeURIComponent(memoryState.keyword)}`;
 }
 
 function escapeAttribute(text) {

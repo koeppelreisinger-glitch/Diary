@@ -94,6 +94,15 @@ class HistoryService:
                 DailyRecord.inspirations.any(
                     (RecordInspiration.content.ilike(keyword_like)) & (RecordInspiration.deleted_at.is_(None))
                 ),
+                DailyRecord.locations.any(
+                    (RecordLocation.name.ilike(keyword_like)) & (RecordLocation.deleted_at.is_(None))
+                ),
+                DailyRecord.expenses.any(
+                    (
+                        RecordExpense.description.ilike(keyword_like)
+                        | RecordExpense.category.ilike(keyword_like)
+                    ) & (RecordExpense.deleted_at.is_(None))
+                ),
             ))
 
         # inspiration 筛选：strip + 空字符串跳过

@@ -652,6 +652,121 @@ body.mobile-page .mobile-stage .state-card {
   white-space: nowrap;
 }
 
+.memory-search-view {
+  margin-left: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.search-hero {
+  position: relative;
+  margin: 12px 16px 24px;
+  padding: 28px 24px;
+  overflow: hidden;
+  border-radius: 28px;
+  border: 1px solid var(--border-light);
+  background:
+    radial-gradient(circle at 88% 18%, rgba(245, 166, 35, .22), transparent 28%),
+    radial-gradient(circle at 12% 92%, rgba(76, 175, 125, .12), transparent 34%),
+    linear-gradient(135deg, rgba(255, 252, 244, .96), rgba(242, 250, 239, .84));
+  box-shadow: var(--shadow);
+}
+
+.search-back {
+  border: 0;
+  padding: 0;
+  margin-bottom: 18px;
+  color: var(--accent);
+  background: transparent;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.search-hero-kicker {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.search-hero h1 {
+  margin: 6px 0 8px;
+  color: var(--text-primary);
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.search-hero p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.search-page-box {
+  margin-top: -8px;
+}
+
+.search-result-list {
+  display: grid;
+  gap: 14px;
+}
+
+.search-result-card {
+  padding: 20px 18px;
+  border: 1px solid var(--border-light);
+  border-left: 4px solid rgba(76, 175, 125, .36);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, .96), rgba(255, 252, 245, .90)),
+    var(--bg-card);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.search-result-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.search-result-date {
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.search-result-quote {
+  margin-top: 16px;
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.65;
+}
+
+.search-result-preview {
+  margin-top: 10px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.85;
+}
+
+.search-highlight {
+  padding: 0 2px;
+  border-radius: 4px;
+  color: var(--text-primary);
+  background: rgba(245, 166, 35, .22);
+}
+
 .memory-feature,
 .memory-empty,
 .memory-photo-group {
