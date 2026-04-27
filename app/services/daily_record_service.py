@@ -13,6 +13,11 @@ from app.models.base import utc_now
 from app.schemas.daily_record import (
     TodayDailyRecordResponse,
     DailyRecordDetailResponse,
+    RecordEventResponse,
+    RecordEmotionResponse,
+    RecordExpenseResponse,
+    RecordLocationResponse,
+    RecordInspirationResponse,
     UpdateDailyRecordRequest,
     UpdateDailyRecordBodyRequest,
     SaveSupplementRequest,
@@ -22,6 +27,88 @@ from app.core.exceptions import ErrorResponseAPIException, NotFoundException, Fo
 
 
 class DailyRecordService:
+    @staticmethod
+    def _safe_datetime(value, fallback=None):
+        return value or fallback or utc_now()
+
+    @staticmethod
+    def _safe_source(value) -> str:
+        return value or "ai"
+
+    @staticmethod
+    def _safe_detail_response(record: DailyRecord) -> DailyRecordDetailResponse:
+        fallback_created_at = DailyRecordService._safe_datetime(getattr(record, "created_at", None))
+        fallback_updated_at = DailyRecordService._safe_datetime(getattr(record, "updated_at", None), fallback_created_at)
+        summary_text = record.summary_text or record.body_text or ""
+
+        active_record = DailyRecordService._filter_deleted_children(record)
+
+        return DailyRecordDetailResponse(
+            id=active_record.id,
+            conversation_id=active_record.conversation_id,
+            record_date=active_record.record_date,
+            body_text=active_record.body_text or summary_text,
+            summary_text=summary_text,
+            emotion_overall_score=active_record.emotion_overall_score or 5,
+            keywords=active_record.keywords if isinstance(active_record.keywords, list) else [],
+            user_note=active_record.user_note,
+            events=[
+                RecordEventResponse(
+                    id=item.id,
+                    content=item.content or "",
+                    source=DailyRecordService._safe_source(item.source),
+                    is_user_confirmed=bool(item.is_user_confirmed),
+                    created_at=DailyRecordService._safe_datetime(item.created_at, fallback_created_at),
+                )
+                for item in active_record.events
+            ],
+            emotions=[
+                RecordEmotionResponse(
+                    id=item.id,
+                    emotion_label=item.emotion_label or "平静",
+                    intensity=item.intensity or 3,
+                    source=DailyRecordService._safe_source(item.source),
+                    is_user_confirmed=bool(item.is_user_confirmed),
+                    created_at=DailyRecordService._safe_datetime(item.created_at, fallback_created_at),
+                )
+                for item in active_record.emotions
+            ],
+            expenses=[
+                RecordExpenseResponse(
+                    id=item.id,
+                    amount=float(item.amount or 0),
+                    currency=item.currency or "CNY",
+                    category=item.category,
+                    description=item.description,
+                    source=DailyRecordService._safe_source(item.source),
+                    is_user_confirmed=bool(item.is_user_confirmed),
+                    created_at=DailyRecordService._safe_datetime(item.created_at, fallback_created_at),
+                )
+                for item in active_record.expenses
+            ],
+            locations=[
+                RecordLocationResponse(
+                    id=item.id,
+                    name=item.name or "未命名地点",
+                    source=DailyRecordService._safe_source(item.source),
+                    is_user_confirmed=bool(item.is_user_confirmed),
+                    created_at=DailyRecordService._safe_datetime(item.created_at, fallback_created_at),
+                )
+                for item in active_record.locations
+            ],
+            inspirations=[
+                RecordInspirationResponse(
+                    id=item.id,
+                    content=item.content or "",
+                    source=DailyRecordService._safe_source(item.source),
+                    created_at=DailyRecordService._safe_datetime(item.created_at, fallback_created_at),
+                )
+                for item in active_record.inspirations
+            ],
+            created_at=fallback_created_at,
+            updated_at=fallback_updated_at,
+        )
+
     @staticmethod
     def _filter_deleted_children(record: DailyRecord) -> DailyRecord:
         record.keywords = record.keywords or []
@@ -87,8 +174,7 @@ class DailyRecordService:
         if not record:
             return None
 
-        record = DailyRecordService._filter_deleted_children(record)
-        return DailyRecordDetailResponse.model_validate(record)
+        return DailyRecordService._safe_detail_response(record)
 
     @staticmethod
     async def get_today_record(session: AsyncSession, user_id: uuid.UUID) -> TodayDailyRecordResponse:
@@ -216,8 +302,7 @@ class DailyRecordService:
         rebuild_svc = DiaryRebuildService()
         updated_record = await rebuild_svc.rebuild(session, record, req.body_text)
 
-        updated_record = DailyRecordService._filter_deleted_children(updated_record)
-        return DailyRecordDetailResponse.model_validate(updated_record)
+        return DailyRecordService._safe_detail_response(updated_record)
 
     @staticmethod
     async def save_supplement(
@@ -272,8 +357,7 @@ class DailyRecordService:
             updated_record = await DiaryRebuildService().rebuild_with_payload(session, record, payload)
 
         # 4. 过滤软删 tags 并序列化返回
-        updated_record = DailyRecordService._filter_deleted_children(updated_record)
-        return DailyRecordDetailResponse.model_validate(updated_record)
+        return DailyRecordService._safe_detail_response(updated_record)
 
     @staticmethod
     async def create_from_manual_body(
@@ -333,5 +417,4 @@ class DailyRecordService:
         await session.refresh(record)
 
         updated_record = await DiaryRebuildService().rebuild(session, record, req.body_text.strip())
-        updated_record = DailyRecordService._filter_deleted_children(updated_record)
-        return DailyRecordDetailResponse.model_validate(updated_record)
+        return DailyRecordService._safe_detail_response(updated_record)
