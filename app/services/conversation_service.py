@@ -44,14 +44,13 @@ class ConversationService:
         result = await session.execute(stmt)
         setting = result.scalar_one_or_none()
 
-        if not setting or not setting.timezone:
-            raise ErrorResponseAPIException(status_code=500, detail="用户时区配置缺失，无法确定今日日期归属", code=50002)
+        tz_str = (setting.timezone if setting and setting.timezone else None) or "Asia/Shanghai"
 
         try:
-            tz = zoneinfo.ZoneInfo(setting.timezone)
+            tz = zoneinfo.ZoneInfo(tz_str)
             return datetime.now(tz).date()
         except Exception:
-            raise ErrorResponseAPIException(status_code=500, detail="用户时区配置非法，无法换算当地时间", code=50002)
+            return datetime.now(zoneinfo.ZoneInfo("Asia/Shanghai")).date()
 
     @staticmethod
     async def get_today_conversation(session: AsyncSession, user_id: uuid.UUID) -> TodayConversationResponse:
