@@ -70,7 +70,11 @@ async function refreshTodayPage() {
             return;
         }
 
-        if (todayPageState.conversation?.status === 'completing' || recordResp.is_generating) {
+        if (
+            todayPageState.conversation?.status === 'completing' ||
+            recordResp.is_generating ||
+            (todayPageState.conversation?.status === 'completed' && !todayPageState.todayRecord)
+        ) {
             renderStateGenerating();
             return;
         }
@@ -138,15 +142,25 @@ function renderStateCompleted() {
     setMainSectionsVisibility(true);
     const stage = document.getElementById('todayStage');
     const recordDate = todayPageState.todayRecord?.record_date || todayPageState.conversation?.record_date || '今天';
+    const record = todayPageState.todayRecord;
+    const bodyText = record?.body_text || record?.summary_text || '';
+    const summaryText = record?.summary_text || '';
 
-    // 仅显示一行小提示，主要内容交给日记正文/补充面板
     stage.innerHTML = `
-        <div style="display:flex;align-items:center;justify-content:space-between;
-                    padding:6px 4px 10px;color:var(--text-muted);font-size:13px">
-            <span>✨ 今日记录完成 · ${escapeHtml(recordDate)}</span>
-            <button class="btn btn-ghost btn-sm" onclick="refreshTodayPage()"
-                    style="font-size:12px;padding:2px 8px;color:var(--text-muted)">刷新</button>
-        </div>
+        <section class="state-card">
+            <div class="state-card__body">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+                    <div>
+                        <p class="state-card__eyebrow">今日记录完成</p>
+                        <div class="state-card__title">${escapeHtml(recordDate)}</div>
+                    </div>
+                    <button class="btn btn-ghost btn-sm" onclick="refreshTodayPage()"
+                            style="font-size:12px;padding:2px 8px;color:var(--text-muted)">刷新</button>
+                </div>
+                ${summaryText ? `<p class="state-card__text" style="margin-top:10px">${escapeHtml(summaryText)}</p>` : ''}
+                <div class="today-summary" style="margin-top:12px;white-space:pre-wrap">${escapeHtml(bodyText || '总结已完成，正文内容暂为空。')}</div>
+            </div>
+        </section>
     `;
 
     // 通知 today.html 显示内联编辑 / 补充面板

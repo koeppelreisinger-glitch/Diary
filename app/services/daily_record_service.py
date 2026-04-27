@@ -24,11 +24,17 @@ from app.core.exceptions import ErrorResponseAPIException, NotFoundException, Fo
 class DailyRecordService:
     @staticmethod
     def _filter_deleted_children(record: DailyRecord) -> DailyRecord:
+        record.keywords = record.keywords or []
+        record.emotion_overall_score = record.emotion_overall_score or 5
+        record.body_text = record.body_text or record.summary_text or ""
         record.events = [item for item in record.events if item.deleted_at is None]
         record.emotions = [item for item in record.emotions if item.deleted_at is None]
         record.expenses = [item for item in record.expenses if item.deleted_at is None]
         record.locations = [item for item in record.locations if item.deleted_at is None]
         record.inspirations = [item for item in record.inspirations if item.deleted_at is None]
+        for item in [*record.events, *record.emotions, *record.expenses, *record.locations]:
+            if item.is_user_confirmed is None:
+                item.is_user_confirmed = False
         return record
 
     @staticmethod
@@ -102,8 +108,11 @@ class DailyRecordService:
             return TodayDailyRecordResponse(has_record=False, is_generating=True)
 
         record_detail = await DailyRecordService._get_record_by_date(session, user_id, today_date)
+        if not record_detail:
+            return TodayDailyRecordResponse(has_record=False, is_generating=True)
+
         return TodayDailyRecordResponse(
-            has_record=record_detail is not None,
+            has_record=True,
             is_generating=False,
             record=record_detail
         )
