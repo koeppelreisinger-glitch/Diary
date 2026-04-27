@@ -35,107 +35,50 @@
                 <div class="greeting-avatar" onclick="location.href='today.html'" id="memAvatar">✍️</div>
             </div>
 
-            <!-- ═══ 今日总结区 ═══ -->
-            <div class="section-row" style="padding-top:12px;padding-bottom:0">
-                <div class="section-row-title">今日总结</div>
+            <section class="memory-search-section">
+                <div class="memory-search">
+                    <input type="search" id="memorySearchInput" placeholder="搜索一句话、一个人、一件小事……"
+                        onkeydown="if(event.key==='Enter') applyMemorySearch()">
+                    <button class="btn btn-primary btn-sm" onclick="applyMemorySearch()">搜索</button>
+                </div>
+                <div class="memory-search-hint">回忆页只读回日记和照片；地点、消费、情绪趋势放在寻迹里。</div>
+            </section>
+
+            <div class="section-row" style="padding-top:10px;padding-bottom:0">
+                <div class="section-row-title">最近一篇日记</div>
                 <span class="section-row-action" onclick="location.href='today.html'">去记录 →</span>
             </div>
-
-            <div style="padding:0 16px">
-                <div class="card card-accent" id="todayCard">
-                    <div class="status-box" style="padding:24px 0">
-                        <div class="loading-spinner"></div>
-                        <div class="text" style="margin-top:10px;font-size:13px">加载中...</div>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- ═══ 照片里的今天 ═══ -->
-            <div class="section-row" style="padding-top:4px;padding-bottom:0" id="photoTodayRow">
-                <div class="section-row-title">📸 照片里的今天</div>
-            </div>
-            <div style="padding:0 16px 4px" id="photoTodayContainer">
-                <div class="status-box" style="padding:14px 0">
+            <div style="padding:0 16px" id="latestDiaryContainer">
+                <div class="status-box" style="padding:24px 0">
                     <div class="loading-spinner"></div>
+                    <div class="text" style="margin-top:10px;font-size:13px">翻开最近的日记...</div>
                 </div>
             </div>
 
-            <!-- ═══ 回忆相册 ═══ -->
+            <div class="section-row" style="padding-top:4px;padding-bottom:0">
+                <div class="section-row-title">记忆摘录</div>
+                <span class="section-row-action" onclick="shuffleQuotes()">换一批</span>
+            </div>
+            <div style="padding:0 16px" id="quoteStreamContainer"></div>
+
+            <div class="section-row" style="padding-top:4px;padding-bottom:0" id="photoTodayRow">
+                <div class="section-row-title">照片里的今天</div>
+            </div>
+            <div style="padding:0 16px 4px" id="photoTodayContainer"></div>
+
             <div class="section-row" style="padding-top:4px;padding-bottom:0" id="photoStreamRow">
-                <div class="section-row-title">🖼️ 回忆相册</div>
-                <span class="section-row-action" id="photoStreamToggle" onclick="togglePhotoStream()"
-                    style="cursor:pointer">展开 ▼</span>
+                <div class="section-row-title">记忆相片</div>
             </div>
-            <div id="photoStreamContainer" style="display:none;padding:0 16px 8px"></div>
+            <div id="photoStreamContainer" style="padding:0 16px 8px"></div>
 
-            <!-- ═══ 历史记录 ═══ -->
             <div class="section-row" style="padding-top:4px">
-                <div class="section-row-title">历史记录</div>
+                <div class="section-row-title">日记时间流</div>
             </div>
-
-            <div style="padding:0 16px">
-
-                <!-- 日期筛选 -->
-                <div class="filter-bar" style="margin-bottom:10px;gap:8px">
-                    <input type="date" id="filterStartDate" style="flex:1;min-width:0;border-radius:10px;padding:7px 10px;
-                           border:1px solid var(--border);font-size:13px;font-family:var(--font-family)">
-                    <span style="color:var(--text-muted);font-size:12px">至</span>
-                    <input type="date" id="filterEndDate" style="flex:1;min-width:0;border-radius:10px;padding:7px 10px;
-                           border:1px solid var(--border);font-size:13px;font-family:var(--font-family)">
-                    <button class="btn btn-primary btn-sm" onclick="onDateFilterChange()"
-                        style="border-radius:10px;white-space:nowrap">查询</button>
-                    <button class="btn btn-ghost btn-sm" onclick="clearDateFilter()"
-                        style="border-radius:10px">清除</button>
+            <div style="padding:0 16px" id="diaryTimelineContainer">
+                <div class="status-box" style="padding:28px 0">
+                    <div class="loading-spinner"></div>
+                    <div class="text" style="margin-top:10px;font-size:13px">整理日记中...</div>
                 </div>
-
-                <!-- Tab 栏 -->
-                <div class="tab-bar" id="tabBar">
-                    <div class="tab-item active" data-tab="events" onclick="switchTab('events')">📋 事件</div>
-                    <div class="tab-item" data-tab="emotions" onclick="switchTab('emotions')">😊 情绪</div>
-                    <div class="tab-item" data-tab="expenses" onclick="switchTab('expenses')">💰 消费</div>
-                    <div class="tab-item" data-tab="locations" onclick="switchTab('locations')">📍 地点</div>
-                    <div class="tab-item" data-tab="inspirations" onclick="switchTab('inspirations')">💡</div>
-                </div>
-
-                <!-- 局部筛选面板 -->
-                <div class="tab-filter" id="tabFilter-emotions">
-                    <div class="tab-filter-inner">
-                        <label>情绪:</label>
-                        <input type="text" id="f-emotion_label" placeholder="如：开心">
-                        <button class="btn btn-primary btn-sm" onclick="applyTabFilter('emotions')">筛选</button>
-                        <button class="btn btn-ghost btn-sm" onclick="clearTabFilter('emotions')">清除</button>
-                    </div>
-                </div>
-                <div class="tab-filter" id="tabFilter-locations">
-                    <div class="tab-filter-inner">
-                        <label>地点:</label>
-                        <input type="text" id="f-name" placeholder="模糊搜索">
-                        <button class="btn btn-primary btn-sm" onclick="applyTabFilter('locations')">筛选</button>
-                        <button class="btn btn-ghost btn-sm" onclick="clearTabFilter('locations')">清除</button>
-                    </div>
-                </div>
-                <div class="tab-filter" id="tabFilter-expenses">
-                    <div class="tab-filter-inner">
-                        <label>分类:</label>
-                        <input type="text" id="f-category" placeholder="如：餐饮">
-                        <label>金额:</label>
-                        <input type="number" id="f-min_amount" min="0" step="0.01" placeholder="最小">
-                        <span>—</span>
-                        <input type="number" id="f-max_amount" min="0" step="0.01" placeholder="最大">
-                        <button class="btn btn-primary btn-sm" onclick="applyTabFilter('expenses')">筛选</button>
-                        <button class="btn btn-ghost btn-sm" onclick="clearTabFilter('expenses')">清除</button>
-                    </div>
-                </div>
-
-                <!-- 表格区 -->
-                <div id="tableArea">
-                    <div class="status-box" style="padding:28px 0">
-                        <div class="loading-spinner"></div>
-                        <div class="text" style="margin-top:10px;font-size:13px">加载中...</div>
-                    </div>
-                </div>
-
             </div>
         </div>
 
@@ -170,8 +113,7 @@
             // 并行发起所有初始化请求，显著提升首屏加载速度
             Promise.all([
                 init(),
-                loadGreeting(),
-                loadPhotoToday()
+                loadGreeting()
             ]).catch(console.error);
         }
 
@@ -184,102 +126,6 @@
                 const av = document.getElementById('memAvatar');
                 if (av && nickname) av.textContent = nickname.charAt(0);
             } catch (e) { /* 静默失败 */ }
-        }
-
-        // ── 照片里的今天（doc13 §3.6：on-this-day 情感钩子）──────────────
-        async function loadPhotoToday() {
-            const container = document.getElementById('photoTodayContainer');
-            const row = document.getElementById('photoTodayRow');
-            try {
-                const data = await apiFetch('/media/on-this-day');
-                if (!data.items || data.items.length === 0) {
-                    if (row) row.style.display = 'none';
-                    if (container) container.style.display = 'none';
-                    return;
-                }
-                container.innerHTML = data.items.map(function (group) {
-                    var imgs = group.images.slice(0, 5).map(function (img) {
-                        var src = img.thumbnail_url || img.url;
-                        return '<img src="' + escapeHtml(src) + '"'
-                            + ' alt="' + escapeHtml(img.ai_caption || '') + '"'
-                            + ' title="' + escapeHtml(img.ai_caption || '') + '"'
-                            + ' loading="lazy"'
-                            + ' style="width:72px;height:72px;object-fit:cover;border-radius:8px;'
-                            + 'flex-shrink:0;cursor:pointer"'
-                            + ' onclick="window.open(\'' + escapeHtml(img.url) + '\',\'_blank\')">';
-                    }).join('');
-                    var year = new Date(group.record_date + 'T00:00:00').getFullYear();
-                    return '<div style="margin-bottom:10px">'
-                        + '<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">📅 ' + year + '年今日</div>'
-                        + '<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px">' + imgs + '</div>'
-                        + '</div>';
-                }).join('');
-            } catch (e) {
-                if (row) row.style.display = 'none';
-                if (container) container.style.display = 'none';
-            }
-        }
-
-        // ── 回忆相册图片流（doc13 §3.6：胶卷/方格视图）─────────────────
-        var _photoStreamLoaded = false;
-
-        function togglePhotoStream() {
-            var container = document.getElementById('photoStreamContainer');
-            var toggle = document.getElementById('photoStreamToggle');
-            if (!container) return;
-            if (container.style.display === 'none') {
-                container.style.display = 'block';
-                toggle.textContent = '收起 ▲';
-                if (!_photoStreamLoaded) {
-                    _photoStreamLoaded = true;
-                    loadPhotoStream(container);
-                }
-            } else {
-                container.style.display = 'none';
-                toggle.textContent = '展开 ▼';
-            }
-        }
-
-        async function loadPhotoStream(container) {
-            container.innerHTML = '<div class="status-box" style="padding:14px 0">'
-                + '<div class="loading-spinner"></div></div>';
-            try {
-                var data = await apiFetch('/media/history?page=1&page_size=30');
-                if (!data.items || data.items.length === 0) {
-                    container.innerHTML = '<div class="status-box" style="padding:14px 0">'
-                        + '<div class="text" style="font-size:13px">还没有图片，在今日对话中发送吧 📷</div></div>';
-                    return;
-                }
-                container.innerHTML = data.items.map(function (group) {
-                    var d = new Date(group.record_date + 'T00:00:00');
-                    var dateLabel = (d.getMonth() + 1) + '月' + d.getDate() + '日';
-                    var imgs = group.images.map(function (img) {
-                        var src = img.thumbnail_url || img.url;
-                        var captionHtml = img.ai_caption
-                            ? '<div style="position:absolute;bottom:0;left:0;right:0;'
-                            + 'background:linear-gradient(transparent,rgba(0,0,0,.6));'
-                            + 'color:#fff;font-size:10px;padding:4px 4px 3px;'
-                            + 'border-radius:0 0 10px 10px;'
-                            + 'overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'
-                            + escapeHtml(img.ai_caption) + '</div>'
-                            : '';
-                        return '<div style="position:relative;width:88px;height:88px;flex-shrink:0">'
-                            + '<img src="' + escapeHtml(src) + '" alt="" loading="lazy"'
-                            + ' style="width:88px;height:88px;object-fit:cover;border-radius:10px;'
-                            + 'cursor:pointer;display:block"'
-                            + ' onclick="window.open(\'' + escapeHtml(img.url) + '\',\'_blank\')">'
-                            + captionHtml
-                            + '</div>';
-                    }).join('');
-                    return '<div style="margin-bottom:14px">'
-                        + '<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">📅 ' + dateLabel + '</div>'
-                        + '<div style="display:flex;flex-wrap:wrap;gap:6px">' + imgs + '</div>'
-                        + '</div>';
-                }).join('');
-            } catch (e) {
-                container.innerHTML = '<div class="status-box" style="padding:14px 0">'
-                    + '<div class="text" style="font-size:13px">' + escapeHtml(e.message) + '</div></div>';
-            }
         }
     </script>
 </body>

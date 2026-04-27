@@ -4,7 +4,7 @@ from datetime import date
 from math import ceil
 from typing import Optional, List, Dict
 
-from sqlalchemy import select, func, desc
+from sqlalchemy import select, func, desc, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -81,8 +81,13 @@ class HistoryService:
             filters.append(DailyRecord.emotion_overall_score >= min_emotion_score)
         if max_emotion_score is not None:
             filters.append(DailyRecord.emotion_overall_score <= max_emotion_score)
-        if keyword:
-            filters.append(DailyRecord.summary_text.ilike(f"%{keyword}%"))
+        if keyword and keyword.strip():
+            keyword_like = f"%{keyword.strip()}%"
+            filters.append(or_(
+                DailyRecord.summary_text.ilike(keyword_like),
+                DailyRecord.body_text.ilike(keyword_like),
+                DailyRecord.user_note.ilike(keyword_like),
+            ))
 
         # inspiration 筛选：strip + 空字符串跳过
         if inspiration:
