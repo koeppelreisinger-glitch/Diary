@@ -4,7 +4,6 @@
 
 // ── 缓存 & 编辑状态 ──────────────────────────────
 let detailData = null;
-let searchTimer = null;
 
 // 待删除灵感 ID 集合（保存前暂存，不立即调用接口）
 const editState = {
@@ -47,53 +46,36 @@ async function loadDailyRecordDetail(date) {
 }
 
 // ── 完整渲染 ──────────────────────────────
-function renderFullDetail(data, query) {
+function renderFullDetail(data) {
     const container = document.getElementById('detailContent');
-    const hl = query ? (t => highlightText(t, query)) : escapeHtml;
+    const hl = escapeHtml;
 
     // 日期信息卡
     const keywordsHtml = (data.keywords || []).map(k =>
         `<span class="keyword-tag">${hl(k)}</span>`
     ).join('');
 
-    // 总结区 — 搜索时只高亮，不隐藏
-    const summaryMatch = !query || matchesQuery(data.summary_text, query);
-    const noteMatch = !query || matchesQuery(data.user_note, query);
-
-    const noteHtml = data.user_note
-        ? `<div class="today-note">💬 ${hl(data.user_note)}</div>`
-        : `<div class="today-note" style="opacity:0.5">💬 暂无备注</div>`;
     const bodyTextHtml = data.body_text
         ? `<div class="today-summary">${hl(data.body_text)}</div>`
         : `<div class="detail-empty">暂无正文</div>`;
 
-    // 五类数据
-    const eventsHtml = renderDetailSection('📋 事件', data.events || [], query,
-        e => matchesQuery(e.content, query),
-        e => `<span class="detail-item-main">${hl(e.content)}</span> ${sourceTag(e.source)} ${confirmedIcon(e.is_user_confirmed)}`
-    );
-
-    const emotionsHtml = renderDetailSection('😊 情绪', data.emotions || [], query,
-        e => matchesQuery(e.emotion_label, query),
+    const emotionsHtml = renderDetailSection('😊 情绪', data.emotions || [],
         e => `<span class="detail-item-main">${hl(e.emotion_label)}</span>
               <span class="intensity-stars">${formatIntensity(e.intensity)}</span>
               ${sourceTag(e.source)} ${confirmedIcon(e.is_user_confirmed)}`
     );
 
-    const expensesHtml = renderDetailSection('💰 消费', data.expenses || [], query,
-        e => matchesQuery(e.category, query) || matchesQuery(e.description, query),
+    const expensesHtml = renderDetailSection('💰 消费', data.expenses || [],
         e => `<span class="amount-cell">${formatAmount(e.amount, e.currency)}</span>
               <span class="detail-item-main">${hl(e.category || '—')} ${e.description ? '· ' + hl(e.description) : ''}</span>
               ${sourceTag(e.source)} ${confirmedIcon(e.is_user_confirmed)}`
     );
 
-    const locationsHtml = renderDetailSection('📍 地点', data.locations || [], query,
-        e => matchesQuery(e.name, query),
+    const locationsHtml = renderDetailSection('📍 地点', data.locations || [],
         e => `<span class="detail-item-main">${hl(e.name)}</span> ${sourceTag(e.source)} ${confirmedIcon(e.is_user_confirmed)}`
     );
 
-    const inspirationsHtml = renderDetailSection('💡 灵感', data.inspirations || [], query,
-        e => matchesQuery(e.content, query),
+    const inspirationsHtml = renderDetailSection('💡 灵感', data.inspirations || [],
         e => `<span class="keyword-tag">${hl(e.content)}</span> ${sourceTag(e.source)}`
     );
 
@@ -107,17 +89,10 @@ function renderFullDetail(data, query) {
         </div>
 
         <div class="card">
-            <div class="detail-section-title">📝 单日摘要</div>
-            <div class="today-summary">${hl(data.summary_text || '')}</div>
-            ${noteHtml}
-        </div>
-
-        <div class="card">
             <div class="detail-section-title">📄 正文</div>
             ${bodyTextHtml}
         </div>
 
-        ${eventsHtml}
         ${emotionsHtml}
         ${expensesHtml}
         ${locationsHtml}
@@ -126,62 +101,16 @@ function renderFullDetail(data, query) {
 }
 
 // ── 渲染单个详情区域 ──────────────────────────────
-function renderDetailSection(title, items, query, matchFn, renderItemFn) {
-    let filteredItems = items;
-    let countInfo = `${items.length}`;
-
-    if (query) {
-        filteredItems = items.filter(matchFn);
-        countInfo = `${filteredItems.length} / ${items.length}`;
-    }
-
-    const bodyHtml = filteredItems.length === 0
-        ? `<div class="detail-empty">${query ? '无匹配结果' : '暂无数据'}</div>`
-        : filteredItems.map(item => `<div class="detail-item">${renderItemFn(item)}</div>`).join('');
+function renderDetailSection(title, items, renderItemFn) {
+    const bodyHtml = items.length === 0
+        ? '<div class="detail-empty">暂无数据</div>'
+        : items.map(item => `<div class="detail-item">${renderItemFn(item)}</div>`).join('');
 
     return `
         <div class="card detail-section">
-            <div class="detail-section-title">${title} <span class="detail-section-count">${countInfo}</span></div>
+            <div class="detail-section-title">${title} <span class="detail-section-count">${items.length}</span></div>
             ${bodyHtml}
         </div>`;
-}
-
-// ── 搜索 ──────────────────────────────
-function onSearchInput() {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(() => {
-        const query = document.getElementById('searchInput').value.trim();
-        if (!detailData) return;
-
-        if (!query) {
-            renderFullDetail(detailData);
-        } else {
-            renderFullDetail(detailData, query);
-        }
-    }, 300);
-}
-
-function clearSearch() {
-    document.getElementById('searchInput').value = '';
-    if (detailData) renderFullDetail(detailData);
-}
-
-// ── 搜索工具 ──────────────────────────────
-function matchesQuery(text, query) {
-    if (!text || !query) return false;
-    return text.toLowerCase().includes(query.toLowerCase());
-}
-
-function highlightText(text, query) {
-    if (!text) return '';
-    if (!query) return escapeHtml(text);
-
-    const escaped = escapeHtml(text);
-    const escapedQuery = escapeHtml(query);
-
-    // 大小写不敏感替换
-    const regex = new RegExp(`(${escapedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-    return escaped.replace(regex, '<mark>$1</mark>');
 }
 
 // ════════════════════════════════════════════════════════
