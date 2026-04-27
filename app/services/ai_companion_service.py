@@ -79,12 +79,11 @@ class AICompanionService:
                 "content": "提问引导：少量是非题。询问实质性开放问题，引导描述细节、感受或过程。"
             })
         
-        # 4. 加入最近的对话上下文
-        # 排除掉系统消息后，取最近的 N 条
+        # 4. 加入本次会话的全部对话上下文
+        # 排除系统消息；系统指令已在上方单独注入。
         other_messages = [m for m in messages if m.role in ("user", "ai")]
-        recent_messages = other_messages[-settings.TOKENHUB_CHAT_CONTEXT_LIMIT:]
         
-        for message in recent_messages:
+        for message in other_messages:
             role = "assistant" if message.role == "ai" else "user"
             content = (message.content or "").strip()
 

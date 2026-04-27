@@ -41,8 +41,9 @@ class ConversationService:
     @staticmethod
     async def _get_today_date(session: AsyncSession, user_id: uuid.UUID) -> datetime.date:
         stmt = select(UserSetting).where(UserSetting.user_id == user_id, UserSetting.deleted_at.is_(None))
+        stmt = stmt.order_by(desc(UserSetting.updated_at), desc(UserSetting.created_at)).limit(1)
         result = await session.execute(stmt)
-        setting = result.scalar_one_or_none()
+        setting = result.scalars().first()
 
         tz_str = (setting.timezone if setting and setting.timezone else None) or "Asia/Shanghai"
 
@@ -60,9 +61,9 @@ class ConversationService:
             Conversation.user_id == user_id,
             Conversation.record_date == today_date,
             Conversation.deleted_at.is_(None)
-        )
+        ).order_by(desc(Conversation.updated_at), desc(Conversation.created_at)).limit(1)
         result = await session.execute(stmt)
-        conv = result.scalar_one_or_none()
+        conv = result.scalars().first()
 
         if not conv:
             return TodayConversationResponse(has_today=False, conversation=None)
@@ -96,8 +97,8 @@ class ConversationService:
                 Conversation.user_id == user_id,
                 Conversation.record_date == today_date,
                 Conversation.deleted_at.is_(None)
-            )
-            existing_conv = (await session.execute(stmt_check)).scalar_one_or_none()
+            ).order_by(desc(Conversation.updated_at), desc(Conversation.created_at)).limit(1)
+            existing_conv = (await session.execute(stmt_check)).scalars().first()
             if existing_conv:
                 return CreateConversationResponse(
                     id=existing_conv.id,

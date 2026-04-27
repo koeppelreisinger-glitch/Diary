@@ -1,7 +1,7 @@
 import uuid
 import zoneinfo
 from datetime import datetime, date
-from sqlalchemy import select, asc
+from sqlalchemy import select, asc, desc
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
@@ -33,8 +33,13 @@ class DailyRecordService:
 
     @staticmethod
     async def _get_today_date(session: AsyncSession, user_id: uuid.UUID) -> datetime.date:
-        stmt = select(UserSetting).where(UserSetting.user_id == user_id, UserSetting.deleted_at.is_(None))
-        setting = (await session.execute(stmt)).scalar_one_or_none()
+        stmt = (
+            select(UserSetting)
+            .where(UserSetting.user_id == user_id, UserSetting.deleted_at.is_(None))
+            .order_by(desc(UserSetting.updated_at), desc(UserSetting.created_at))
+            .limit(1)
+        )
+        setting = (await session.execute(stmt)).scalars().first()
         # 容错：用户无设置或时区为空时，fallback 到 Asia/Shanghai
         tz_str = (setting.timezone if setting and setting.timezone else None) or "Asia/Shanghai"
         try:
@@ -71,8 +76,8 @@ class DailyRecordService:
             selectinload(DailyRecord.expenses),
             selectinload(DailyRecord.locations),
             selectinload(DailyRecord.inspirations)
-        )
-        record = (await session.execute(stmt)).scalar_one_or_none()
+        ).order_by(desc(DailyRecord.updated_at), desc(DailyRecord.created_at)).limit(1)
+        record = (await session.execute(stmt)).scalars().first()
         if not record:
             return None
 
@@ -87,8 +92,8 @@ class DailyRecordService:
             Conversation.user_id == user_id,
             Conversation.record_date == today_date,
             Conversation.deleted_at.is_(None)
-        )
-        conv = (await session.execute(conv_stmt)).scalar_one_or_none()
+        ).order_by(desc(Conversation.updated_at), desc(Conversation.created_at)).limit(1)
+        conv = (await session.execute(conv_stmt)).scalars().first()
 
         if not conv or conv.status == "recording":
             return TodayDailyRecordResponse(has_record=False, is_generating=False)
@@ -98,7 +103,7 @@ class DailyRecordService:
 
         record_detail = await DailyRecordService._get_record_by_date(session, user_id, today_date)
         return TodayDailyRecordResponse(
-            has_record=True,
+            has_record=record_detail is not None,
             is_generating=False,
             record=record_detail
         )

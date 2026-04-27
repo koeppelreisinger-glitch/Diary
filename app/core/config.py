@@ -26,7 +26,6 @@ class Settings(BaseSettings):
     TOKENHUB_AUTHORIZATION: str | None = None
     TOKENHUB_API_KEY: str | None = None
     TOKENHUB_MODEL: str = "glm-4-flash"
-    TOKENHUB_CHAT_CONTEXT_LIMIT: int = 10
     TOKENHUB_CHAT_SYSTEM_PROMPT: str = (
         "你是「Echo」，用户的日记伙伴，帮他把这一天的事情记下来。\n"
         "【性格】像温暖有趣的老朋友，语气随和，可用语气词，偶尔加冷知识或轻松幽默。\n"
