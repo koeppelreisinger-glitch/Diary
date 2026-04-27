@@ -3,68 +3,100 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>回响 Echo — 登录</title>
-    <meta name="description" content="回响 Echo 登录页">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Echo — 登录</title>
+    <meta name="description" content="Echo AI 日记登录与注册">
     <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body class="mobile-page mobile-page--login">
     <div class="mobile-stage">
-        <div class="login-page">
-            <div class="login-card">
-                <h1 class="login-title">回响 Echo</h1>
-                <p class="login-subtitle">让记录回归对话</p>
+        <main class="login-page">
+            <section class="login-card">
+                <div class="login-brand">
+                    <div class="login-mark">Echo</div>
+                    <h1 class="login-title">把今天轻轻留下</h1>
+                    <p class="login-subtitle">用几句话、一张图，慢慢整理成属于你的日记。</p>
+                </div>
 
-                <form id="loginForm" onsubmit="return handleLogin(event)">
+                <div class="auth-tabs" role="tablist" aria-label="登录或注册">
+                    <button class="auth-tab active" id="loginTab" type="button" onclick="switchAuthMode('login')">登录</button>
+                    <button class="auth-tab" id="registerTab" type="button" onclick="switchAuthMode('register')">注册</button>
+                </div>
+
+                <form id="authForm" onsubmit="return handleAuthSubmit(event)">
                     <div class="form-group">
                         <label for="phone">手机号</label>
-                        <input type="text" id="phone" placeholder="请输入手机号" required autocomplete="tel">
+                        <input type="tel" id="phone" placeholder="请输入手机号" required autocomplete="tel">
                     </div>
+
+                    <div class="form-group auth-register-only" id="nicknameGroup" style="display:none">
+                        <label for="nickname">昵称</label>
+                        <input type="text" id="nickname" placeholder="想让 Echo 怎么称呼你" autocomplete="nickname" maxlength="50">
+                    </div>
+
                     <div class="form-group">
                         <label for="password">密码</label>
-                        <input type="password" id="password" placeholder="请输入密码" required
-                            autocomplete="current-password">
+                        <input type="password" id="password" placeholder="至少 8 位" required autocomplete="current-password" minlength="8">
                     </div>
-                    <button type="submit" class="btn btn-primary login-btn" id="loginBtn">登 录</button>
-                    <div class="login-error" id="loginError"></div>
+
+                    <button type="submit" class="btn btn-primary login-btn" id="authSubmitBtn">登录</button>
+                    <div class="login-error" id="loginError" role="alert"></div>
                 </form>
 
-                <div class="login-footer">
-                    还没有账号？<a href="#" onclick="alert('请先使用联调台或接口注册账号')">注册</a>
-                    · <a href="test-console.html">联调台</a>
+                <div class="login-footer" id="authFooter">
+                    还没有账号？<button type="button" class="text-link" onclick="switchAuthMode('register')">创建一个</button>
                 </div>
-            </div>
-        </div>
+            </section>
+        </main>
     </div>
 
     <script src="js/api.js"></script>
     <script>
-        // 已登录则直接跳主页
+        let authMode = 'login';
+
         if (getToken()) {
             window.location.href = 'today.html';
         }
 
-        async function handleLogin(e) {
+        function switchAuthMode(mode) {
+            authMode = mode === 'register' ? 'register' : 'login';
+            const isRegister = authMode === 'register';
+            document.getElementById('loginTab').classList.toggle('active', !isRegister);
+            document.getElementById('registerTab').classList.toggle('active', isRegister);
+            document.getElementById('nicknameGroup').style.display = isRegister ? '' : 'none';
+            document.getElementById('authSubmitBtn').textContent = isRegister ? '注册并进入' : '登录';
+            document.getElementById('password').autocomplete = isRegister ? 'new-password' : 'current-password';
+            document.getElementById('loginError').textContent = '';
+            document.getElementById('authFooter').innerHTML = isRegister
+                ? `已有账号？<button type="button" class="text-link" onclick="switchAuthMode('login')">去登录</button>`
+                : `还没有账号？<button type="button" class="text-link" onclick="switchAuthMode('register')">创建一个</button>`;
+        }
+
+        async function handleAuthSubmit(e) {
             e.preventDefault();
             const phone = document.getElementById('phone').value.trim();
+            const nickname = document.getElementById('nickname').value.trim();
             const password = document.getElementById('password').value;
             const errorEl = document.getElementById('loginError');
-            const btn = document.getElementById('loginBtn');
+            const btn = document.getElementById('authSubmitBtn');
 
             errorEl.textContent = '';
             btn.disabled = true;
-            btn.textContent = '登录中...';
+            btn.textContent = authMode === 'register' ? '注册中...' : '登录中...';
 
             try {
+                if (authMode === 'register') {
+                    await apiRegister(phone, password, nickname);
+                }
                 const data = await apiLogin(phone, password);
                 setToken(data.access_token);
                 window.location.href = 'today.html';
             } catch (err) {
-                errorEl.textContent = err.message || '登录失败，请检查手机号和密码';
+                errorEl.textContent = err.message || (authMode === 'register' ? '注册失败，请稍后重试' : '登录失败，请检查手机号和密码');
             } finally {
                 btn.disabled = false;
-                btn.textContent = '登 录';
+                btn.textContent = authMode === 'register' ? '注册并进入' : '登录';
             }
         }
     </script>

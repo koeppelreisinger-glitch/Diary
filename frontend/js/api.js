@@ -98,6 +98,35 @@ async function apiLogin(phone, password) {
     return json.data; // { access_token, token_type, expires_in }
 }
 
+/**
+ * 注册专用（不需要 token）
+ */
+async function apiRegister(phone, password, nickname) {
+    const payload = { phone, password };
+    if (nickname && nickname.trim()) {
+        payload.nickname = nickname.trim();
+    }
+
+    const response = await fetch(`${API_BASE}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+
+    let json;
+    try {
+        json = await response.json();
+    } catch (e) {
+        throw new Error(`服务器错误 (${response.status})，请稍后重试`);
+    }
+
+    if (!response.ok) {
+        throw new Error(json.message || '注册失败');
+    }
+
+    return json.data; // CurrentUserResponse
+}
+
 // ── 工具函数 ──────────────────────────────
 
 /**
