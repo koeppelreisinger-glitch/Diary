@@ -4,7 +4,7 @@ from datetime import date
 from math import ceil
 from typing import Optional, List, Dict
 
-from sqlalchemy import select, func, desc, or_
+from sqlalchemy import select, func, desc, or_, String
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -87,6 +87,13 @@ class HistoryService:
                 DailyRecord.summary_text.ilike(keyword_like),
                 DailyRecord.body_text.ilike(keyword_like),
                 DailyRecord.user_note.ilike(keyword_like),
+                DailyRecord.keywords.cast(String).ilike(keyword_like),
+                DailyRecord.events.any(
+                    (RecordEvent.content.ilike(keyword_like)) & (RecordEvent.deleted_at.is_(None))
+                ),
+                DailyRecord.inspirations.any(
+                    (RecordInspiration.content.ilike(keyword_like)) & (RecordInspiration.deleted_at.is_(None))
+                ),
             ))
 
         # inspiration 筛选：strip + 空字符串跳过

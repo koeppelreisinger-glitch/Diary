@@ -44,10 +44,12 @@
                 </div>
                 <div class="memory-search">
                     <input type="search" id="memorySearchInput" placeholder="搜索一句话、一个人、一件小事……"
-                        onkeydown="if(event.key==='Enter') applyMemorySearch()">
+                        oninput="handleMemorySearchInput()" onkeydown="if(event.key==='Enter') applyMemorySearch()">
                     <button class="btn btn-primary btn-sm" onclick="applyMemorySearch()">搜索</button>
+                    <button class="btn btn-secondary btn-sm memory-clear-btn" id="memorySearchClearBtn"
+                        onclick="clearMemorySearch()" style="display:none">清除</button>
                 </div>
-                <div class="memory-search-hint">回忆页只读回日记和照片；地点、消费、情绪趋势放在寻迹里。</div>
+                <div class="memory-search-hint" id="memorySearchStatus">回忆页只读回日记和照片；地点、消费、情绪趋势放在寻迹里。</div>
             </section>
 
             <section class="memory-section">

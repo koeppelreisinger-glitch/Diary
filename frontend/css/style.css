@@ -648,6 +648,10 @@ body.mobile-page .mobile-stage .state-card {
   line-height: 1.5;
 }
 
+.memory-clear-btn {
+  white-space: nowrap;
+}
+
 .memory-feature,
 .memory-empty,
 .memory-photo-group {

@@ -9,6 +9,7 @@ const memoryState = {
     keyword: '',
     latestRecords: [],
     quoteOffset: 0,
+    searchTimer: null,
 };
 
 async function init() {
@@ -32,7 +33,50 @@ function applyMemorySearch() {
     memoryState.keyword = (input?.value || '').trim();
     memoryState.page = 1;
     memoryState.quoteOffset = 0;
+    updateMemorySearchControls('搜索中...');
     loadDiaryTimeline(1);
+}
+
+function handleMemorySearchInput() {
+    const input = document.getElementById('memorySearchInput');
+    const nextKeyword = (input?.value || '').trim();
+    const clearBtn = document.getElementById('memorySearchClearBtn');
+    if (clearBtn) clearBtn.style.display = nextKeyword ? '' : 'none';
+
+    clearTimeout(memoryState.searchTimer);
+    memoryState.searchTimer = setTimeout(() => {
+        if (nextKeyword === memoryState.keyword) return;
+        memoryState.keyword = nextKeyword;
+        memoryState.page = 1;
+        memoryState.quoteOffset = 0;
+        updateMemorySearchControls(nextKeyword ? '搜索中...' : null);
+        loadDiaryTimeline(1);
+    }, 350);
+}
+
+function clearMemorySearch() {
+    const input = document.getElementById('memorySearchInput');
+    if (input) input.value = '';
+    clearTimeout(memoryState.searchTimer);
+    memoryState.keyword = '';
+    memoryState.page = 1;
+    memoryState.quoteOffset = 0;
+    updateMemorySearchControls(null);
+    loadDiaryTimeline(1);
+}
+
+function updateMemorySearchControls(statusText) {
+    const clearBtn = document.getElementById('memorySearchClearBtn');
+    const status = document.getElementById('memorySearchStatus');
+    if (clearBtn) clearBtn.style.display = memoryState.keyword ? '' : 'none';
+    if (!status) return;
+    if (statusText) {
+        status.textContent = statusText;
+        return;
+    }
+    status.textContent = memoryState.keyword
+        ? `正在搜索“${memoryState.keyword}”`
+        : '回忆页只读回日记和照片；地点、消费、情绪趋势放在寻迹里。';
 }
 
 async function loadDiaryTimeline(page) {
@@ -57,12 +101,27 @@ async function loadDiaryTimeline(page) {
         renderLatestDiary(data.records || []);
         renderQuoteStream(data.records || []);
         renderDiaryTimeline(data);
+        renderMemorySearchResult(data);
     } catch (err) {
         const html = `<div class="status-box"><div class="icon">×</div><div class="text">${escapeHtml(err.message)}</div></div>`;
         if (latest) latest.innerHTML = html;
         if (quotes) quotes.innerHTML = '';
         if (timeline) timeline.innerHTML = html;
+        updateMemorySearchControls('搜索失败，请稍后重试。');
     }
+}
+
+function renderMemorySearchResult(data) {
+    const status = document.getElementById('memorySearchStatus');
+    if (!status) return;
+    if (!memoryState.keyword) {
+        updateMemorySearchControls(null);
+        return;
+    }
+    const total = Number(data.total_count || 0);
+    status.textContent = total > 0
+        ? `找到 ${total} 段和“${memoryState.keyword}”有关的记忆。`
+        : '没有找到这段记忆，换一个词试试。';
 }
 
 function renderLatestDiary(records) {
@@ -70,11 +129,15 @@ function renderLatestDiary(records) {
     if (!container) return;
 
     if (!records.length) {
+        const title = memoryState.keyword ? '没有找到这段记忆' : '还没有可翻阅的日记';
+        const text = memoryState.keyword ? '换一个词试试，或者去寻迹里查地点、消费和情绪趋势。' : '完成一次今日记录后，它会出现在这里。';
         container.innerHTML = `
             <div class="memory-empty">
-                <div class="memory-empty-title">还没有可翻阅的日记</div>
-                <div class="memory-empty-text">完成一次今日记录后，它会出现在这里。</div>
-                <button class="btn btn-primary btn-sm" onclick="location.href='today.html'">去记录</button>
+                <div class="memory-empty-title">${escapeHtml(title)}</div>
+                <div class="memory-empty-text">${escapeHtml(text)}</div>
+                ${memoryState.keyword
+                    ? '<button class="btn btn-secondary btn-sm" onclick="clearMemorySearch()">清除搜索</button>'
+                    : '<button class="btn btn-primary btn-sm" onclick="location.href=\'today.html\'">去记录</button>'}
             </div>`;
         return;
     }
