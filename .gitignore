@@ -62,3 +62,8 @@ migrate_*.py
 test_*.py
 probe_*.py
 check_schema.py
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
