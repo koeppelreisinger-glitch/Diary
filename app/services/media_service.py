@@ -75,21 +75,12 @@ class MediaService:
         mime = file.content_type or "image/jpeg"
         ext = mime.split("/")[-1].replace("jpeg", "jpg")
         file_name = f"{uuid.uuid4().hex}.{ext}"
-        user_dir = os.path.join(UPLOADS_DIR, str(user_id), str(target_date))
-        try:
-            os.makedirs(user_dir, exist_ok=True)
-        except OSError:
-            pass
-        file_path = os.path.join(user_dir, file_name)
-
-        try:
-            with open(file_path, "wb") as f:
-                f.write(content)
-        except OSError:
-            logger.warning("[MediaService] 无法写入文件系统（Vercel 只读），图片不持久化")
-
         storage_key = f"{user_id}/{target_date}/{file_name}"
-        url = MediaService._public_upload_url(storage_key)
+        storage_key, url = await MediaService._save_image_bytes(
+            storage_key=storage_key,
+            content=content,
+            content_type=mime,
+        )
 
         # 查找归属日期的 DailyRecord（可选绑定）
         daily_record_id = None
@@ -264,6 +255,76 @@ class MediaService:
             return ""
         return f"/uploads/{storage_key.lstrip('/')}"
 
+    @staticmethod
+    def _use_vercel_blob() -> bool:
+        return bool(os.environ.get("BLOB_READ_WRITE_TOKEN"))
+
+    @staticmethod
+    async def _save_image_bytes(
+        storage_key: str,
+        content: bytes,
+        content_type: str,
+    ) -> tuple[str, str]:
+        if MediaService._use_vercel_blob():
+            return await MediaService._save_to_vercel_blob(
+                storage_key=storage_key,
+                content=content,
+                content_type=content_type,
+            )
+
+        MediaService._save_to_local_uploads(storage_key, content)
+        return storage_key, MediaService._public_upload_url(storage_key)
+
+    @staticmethod
+    async def _save_to_vercel_blob(
+        storage_key: str,
+        content: bytes,
+        content_type: str,
+    ) -> tuple[str, str]:
+        try:
+            from vercel.blob import AsyncBlobClient
+        except ImportError as exc:
+            raise ErrorResponseAPIException(
+                500,
+                "Vercel Blob SDK 未安装，请先安装 requirements.txt 中的 vercel 包",
+                50002,
+            ) from exc
+
+        try:
+            async with AsyncBlobClient() as client:
+                uploaded = await client.put(
+                    storage_key,
+                    content,
+                    access="public",
+                    content_type=content_type,
+                    add_random_suffix=False,
+                    multipart=len(content) > 4 * 1024 * 1024,
+                )
+        except Exception as exc:
+            logger.exception("[MediaService] Vercel Blob upload failed storage_key=%s", storage_key)
+            raise ErrorResponseAPIException(500, "图片上传到 Vercel Blob 失败", 50003) from exc
+
+        pathname = getattr(uploaded, "pathname", None) or storage_key
+        url = getattr(uploaded, "url", None)
+        if isinstance(uploaded, dict):
+            pathname = uploaded.get("pathname") or pathname
+            url = uploaded.get("url") or url
+
+        if not url:
+            raise ErrorResponseAPIException(500, "Vercel Blob 未返回图片 URL", 50004)
+
+        return pathname, url
+
+    @staticmethod
+    def _save_to_local_uploads(storage_key: str, content: bytes) -> None:
+        file_path = os.path.join(UPLOADS_DIR, *storage_key.strip("/").split("/"))
+        try:
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            with open(file_path, "wb") as f:
+                f.write(content)
+        except OSError:
+            logger.warning("[MediaService] Unable to write local uploads directory")
+
     # ── 异步后台处理 ─────────────────────────────────────────────
 
     @staticmethod
@@ -297,11 +358,12 @@ class MediaService:
                 buf = _io.BytesIO()
                 thumb.save(buf, format="JPEG", quality=80)
 
-                thumb_dir = os.path.join(UPLOADS_DIR, "thumbnails")
-                os.makedirs(thumb_dir, exist_ok=True)
-                with open(os.path.join(thumb_dir, f"{image_id}.jpg"), "wb") as fp:
-                    fp.write(buf.getvalue())
-                _thumb_url = f"/uploads/thumbnails/{image_id}.jpg"
+                _thumb_key = f"thumbnails/{image_id}.jpg"
+                _, _thumb_url = await MediaService._save_image_bytes(
+                    storage_key=_thumb_key,
+                    content=buf.getvalue(),
+                    content_type="image/jpeg",
+                )
 
                 # 步骤 2：主色调提取（CPU 密集 → 线程池，不阻塞事件循环）
                 ev_loop = asyncio.get_event_loop()
