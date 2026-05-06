@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
 import logging
@@ -42,13 +42,24 @@ def create_app() -> FastAPI:
 
     # 挂载用户上传图片目录。
     # Vercel 只能写 /tmp，不能保证长期持久化，但挂载后同实例内的演示图片可正常访问。
-    uploads_dir = (
-        "/tmp/uploads"
-        if os.environ.get("VERCEL")
-        else os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
-    )
-    os.makedirs(uploads_dir, exist_ok=True)
-    app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+    uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
+    if os.environ.get("VERCEL"):
+        @app.get("/uploads/{storage_key:path}", include_in_schema=False)
+        async def legacy_uploads_blob_proxy(storage_key: str):
+            try:
+                from vercel.blob import AsyncBlobClient
+
+                client = AsyncBlobClient()
+                result = await client.get(storage_key, access="public")
+                if result is None or result.status_code != 200 or result.stream is None:
+                    return Response(status_code=404)
+                content_type = result.blob.content_type or "application/octet-stream"
+                return StreamingResponse(result.stream, media_type=content_type)
+            except Exception:
+                return Response(status_code=404)
+    else:
+        os.makedirs(uploads_dir, exist_ok=True)
+        app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
     # 注册全局异常处理：覆盖默认的 422 格式
     @app.exception_handler(RequestValidationError)

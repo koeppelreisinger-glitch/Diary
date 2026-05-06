@@ -1034,6 +1034,30 @@ body.mobile-page .mobile-stage .state-card {
   display: block;
 }
 
+.memory-photo-fallback {
+  display: none;
+}
+
+.memory-photo-item.is-broken {
+  background: #f4f1eb;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  place-items: center;
+}
+
+.memory-photo-item.is-broken .memory-photo-fallback {
+  display: grid;
+  position: absolute;
+  inset: 0;
+  padding: 10px;
+  text-align: center;
+  line-height: 1.4;
+  background: transparent;
+  color: var(--text-muted);
+  white-space: normal;
+}
+
 .memory-photo-item span {
   position: absolute;
   left: 0;

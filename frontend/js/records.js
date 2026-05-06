@@ -329,7 +329,9 @@ function renderPhotoItem(img) {
     const caption = img.ai_caption || '';
     return `
         <button class="memory-photo-item" onclick="window.open('${escapeAttribute(img.url)}','_blank')" title="${escapeAttribute(caption)}">
-            <img src="${escapeAttribute(src)}" alt="${escapeAttribute(caption)}" loading="lazy">
+            <img src="${escapeAttribute(src)}" alt="${escapeAttribute(caption)}" loading="lazy"
+                 onerror="this.closest('.memory-photo-item').classList.add('is-broken'); this.remove();">
+            <span class="memory-photo-fallback">图片暂不可用</span>
             ${caption ? `<span>${escapeHtml(caption)}</span>` : ''}
         </button>`;
 }

@@ -291,15 +291,15 @@ class MediaService:
             ) from exc
 
         try:
-            async with AsyncBlobClient() as client:
-                uploaded = await client.put(
-                    storage_key,
-                    content,
-                    access="public",
-                    content_type=content_type,
-                    add_random_suffix=False,
-                    multipart=len(content) > 4 * 1024 * 1024,
-                )
+            client = AsyncBlobClient()
+            uploaded = await client.put(
+                storage_key,
+                content,
+                access="public",
+                content_type=content_type,
+                add_random_suffix=False,
+                multipart=len(content) > 4 * 1024 * 1024,
+            )
         except Exception as exc:
             logger.exception("[MediaService] Vercel Blob upload failed storage_key=%s", storage_key)
             raise ErrorResponseAPIException(500, "图片上传到 Vercel Blob 失败", 50003) from exc
