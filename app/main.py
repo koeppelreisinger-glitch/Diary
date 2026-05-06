@@ -1,10 +1,11 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse, Response, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi.staticfiles import StaticFiles
 import logging
 import os
+import mimetypes
 
 # 必须在所有 ORM 操作前导入全部 Model，否则 relationship 里的字符串引用会解析失败
 import app.models  # noqa: F401
@@ -46,16 +47,41 @@ def create_app() -> FastAPI:
     if os.environ.get("VERCEL"):
         @app.get("/uploads/{storage_key:path}", include_in_schema=False)
         async def legacy_uploads_blob_proxy(storage_key: str):
+            token = os.environ.get("BLOB_READ_WRITE_TOKEN")
+            if not token:
+                logger.error("[uploads] BLOB_READ_WRITE_TOKEN is not configured")
+                return Response(status_code=404)
+
+            tmp_root = os.path.abspath("/tmp/uploads")
+            tmp_file_path = os.path.abspath(
+                os.path.join(tmp_root, *storage_key.strip("/").split("/"))
+            )
+            if not (tmp_file_path == tmp_root or tmp_file_path.startswith(tmp_root + os.sep)):
+                logger.warning("[uploads] Rejected invalid storage key: %s", storage_key)
+                return Response(status_code=404)
+            if os.path.isfile(tmp_file_path):
+                content_type = mimetypes.guess_type(tmp_file_path)[0] or "application/octet-stream"
+                return FileResponse(tmp_file_path, media_type=content_type)
+
             try:
                 from vercel.blob import AsyncBlobClient
 
-                client = AsyncBlobClient()
-                result = await client.get(storage_key, access="public")
+                async with AsyncBlobClient(token=token) as client:
+                    result = await client.get(storage_key, access="public")
                 if result is None or result.status_code != 200 or result.stream is None:
+                    logger.warning("[uploads] Blob not found: %s", storage_key)
                     return Response(status_code=404)
                 content_type = result.blob.content_type or "application/octet-stream"
-                return StreamingResponse(result.stream, media_type=content_type)
-            except Exception:
+                headers = {}
+                cache_control = getattr(result.blob, "cache_control", None)
+                etag = getattr(result.blob, "etag", None)
+                if cache_control:
+                    headers["Cache-Control"] = cache_control
+                if etag:
+                    headers["ETag"] = etag
+                return StreamingResponse(result.stream, media_type=content_type, headers=headers)
+            except Exception as exc:
+                logger.exception("[uploads] Failed to proxy Blob %s: %s", storage_key, exc)
                 return Response(status_code=404)
     else:
         os.makedirs(uploads_dir, exist_ok=True)
