@@ -40,11 +40,15 @@ def create_app() -> FastAPI:
     if os.path.isdir(frontend_dir) and not os.environ.get("VERCEL"):
         app.mount("/frontend", StaticFiles(directory=frontend_dir), name="frontend")
 
-    # 挂载用户上传图片目录（本地开发使用；Vercel 无持久存储，跳过挂载）
-    if not os.environ.get("VERCEL"):
-        uploads_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
-        os.makedirs(uploads_dir, exist_ok=True)
-        app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+    # 挂载用户上传图片目录。
+    # Vercel 只能写 /tmp，不能保证长期持久化，但挂载后同实例内的演示图片可正常访问。
+    uploads_dir = (
+        "/tmp/uploads"
+        if os.environ.get("VERCEL")
+        else os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
+    )
+    os.makedirs(uploads_dir, exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
     # 注册全局异常处理：覆盖默认的 422 格式
     @app.exception_handler(RequestValidationError)

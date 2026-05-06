@@ -296,10 +296,32 @@
                     <div class="ep-actions" id="histBodyActions"></div>
                     <div class="ep-status" id="histBodySt"></div>
                 </div>
+                <div class="ep" id="histPhotoPanel" style="margin:0 0 8px">
+                    <div class="ep-title">📷 日记照片</div>
+                    <div class="ep-hint">上传的照片会归到这一天，并在回忆页显示</div>
+                    <div id="histPhotoGrid" class="memory-photo-grid" style="margin-top:10px"></div>
+                    <div class="ep-actions">
+                        <label class="btn btn-secondary" for="histPhotoInput">上传照片</label>
+                        <input type="file" id="histPhotoInput" accept="image/*" style="display:none"
+                            onchange="histUploadPhoto(event)">
+                    </div>
+                    <div class="ep-status" id="histPhotoSt"></div>
+                </div>
                 <div class="sp" style="margin:0 0 12px">
                     <div class="sp-title">💬 继续补充</div>
                     <div class="sp-msgs" id="histSuppMsgs"></div>
+                    <div id="histSuppPhotoPreview" style="display:none;align-items:center;gap:10px;
+                        padding:8px 10px;background:var(--bg-secondary);border:1px dashed var(--border);
+                        border-radius:10px;margin:8px 0">
+                        <img id="histSuppPhotoThumb" src="" alt="补充照片预览"
+                            style="width:52px;height:52px;object-fit:cover;border-radius:8px">
+                        <span id="histSuppPhotoSt" style="font-size:12px;color:var(--text-muted)">上传中…</span>
+                        <button class="btn btn-ghost btn-sm" onclick="histClearSuppPhoto()">移除</button>
+                    </div>
                     <div class="sp-input-row">
+                        <label class="btn btn-secondary btn-sm" for="histSuppPhotoInput">📷</label>
+                        <input type="file" id="histSuppPhotoInput" accept="image/*" style="display:none"
+                            onchange="histPickSuppPhoto(event)">
                         <input class="sp-input" type="text" id="histSuppInput" placeholder="输入补充内容…"
                             onkeydown="if(event.key==='Enter')histSendSupp()">
                         <button class="btn btn-primary btn-sm" onclick="histSendSupp()" id="histSuppSendBtn">发送</button>
@@ -455,6 +477,7 @@
         else { initDateLabel(); initPage(); }
 
         let _recordDates = new Set();
+        const histSuppPhotoState = { id: null, url: null, uploading: false };
 
         async function initPage() {
             const now = new Date();
@@ -545,6 +568,9 @@
             document.getElementById('histSuppMsgs').innerHTML = '';
             document.getElementById('histSuppSaveRow').style.display = 'none';
             setSt('histSuppSt', '', '');
+            setSt('histPhotoSt', '', '');
+            document.getElementById('histPhotoGrid').innerHTML = '';
+            histClearSuppPhoto();
             document.getElementById('histSuppInput').disabled = true;
             document.getElementById('histSuppSendBtn').disabled = true;
 
@@ -567,6 +593,7 @@
         function closeHistPanel() {
             document.getElementById('histPanel').style.display = 'none';
             document.getElementById('todayMainContent').style.display = 'block';
+            histClearSuppPhoto();
         }
 
         function openFuturePanel(dateStr) {
@@ -621,7 +648,9 @@
                 '<button class="btn btn-secondary" onclick="histRegenBody()" id="histRegenBtn">🤖 AI 重新生成</button>';
             document.getElementById('histSuppInput').disabled = false;
             document.getElementById('histSuppSendBtn').disabled = false;
+            document.getElementById('histPhotoPanel').style.display = '';
             document.getElementById('histSuppInput').placeholder = '输入补充内容…';
+            loadHistPhotos();
         }
 
         function _renderHistNoRecord() {
@@ -632,7 +661,106 @@
                 '<button class="btn btn-primary" onclick="histSaveBody()" id="histSaveBodyBtn">💾 保存正文</button>';
             document.getElementById('histSuppInput').disabled = true;
             document.getElementById('histSuppSendBtn').disabled = true;
+            document.getElementById('histPhotoPanel').style.display = 'none';
             document.getElementById('histSuppInput').placeholder = '请先保存正文，再来补充';
+            histClearSuppPhoto();
+        }
+
+        async function loadHistPhotos() {
+            const grid = document.getElementById('histPhotoGrid');
+            if (!grid || !histState.dateStr) return;
+            grid.innerHTML = '<div class="ep-hint">照片加载中…</div>';
+            try {
+                const images = await apiFetch('/media/history/' + histState.dateStr);
+                const visible = (images || []).filter(img => img && (img.thumbnail_url || img.url));
+                if (!visible.length) {
+                    grid.innerHTML = '<div class="ep-hint">这一天还没有照片。</div>';
+                    return;
+                }
+                grid.innerHTML = visible.map(img => {
+                    const src = img.thumbnail_url || img.url;
+                    const caption = img.ai_caption || '日记照片';
+                    return `<button class="memory-photo-item" onclick="window.open('${escapeAttribute(img.url)}','_blank')" title="${escapeAttribute(caption)}">
+                        <img src="${escapeAttribute(src)}" alt="${escapeAttribute(caption)}" loading="lazy">
+                        ${img.ai_caption ? `<span>${escapeHtml(img.ai_caption)}</span>` : ''}
+                    </button>`;
+                }).join('');
+            } catch (e) {
+                grid.innerHTML = '<div class="ep-hint">照片加载失败：' + escapeHtml(e.message) + '</div>';
+            }
+        }
+
+        async function uploadPhotoForDate(file, statusId, previewImgId) {
+            if (!file || !histState.dateStr) return null;
+            const status = document.getElementById(statusId);
+            const preview = previewImgId ? document.getElementById(previewImgId) : null;
+            const objectUrl = URL.createObjectURL(file);
+            if (preview) preview.src = objectUrl;
+            if (status) status.textContent = '上传中…';
+
+            const formData = new FormData();
+            formData.append('file', file);
+            const params = new URLSearchParams({ record_date: histState.dateStr });
+            if (histState.convId) params.set('conversation_id', histState.convId);
+            const resp = await fetch('/api/v1/media/upload?' + params.toString(), {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${getToken()}` },
+                body: formData,
+            });
+            let json;
+            try { json = await resp.json(); } catch (e) { json = null; }
+            if (!resp.ok || !json?.data) {
+                throw new Error(json?.message || '上传失败');
+            }
+            if (status) status.textContent = '已上传';
+            return json.data;
+        }
+
+        async function histUploadPhoto(event) {
+            const file = event.target.files[0];
+            if (!file || !histState.record) return;
+            try {
+                setSt('histPhotoSt', '上传中…', '');
+                await uploadPhotoForDate(file, 'histPhotoSt');
+                setSt('histPhotoSt', '✅ 照片已上传', 'ok');
+                await loadHistPhotos();
+            } catch (e) {
+                setSt('histPhotoSt', '❌ ' + e.message, 'err');
+            } finally {
+                event.target.value = '';
+            }
+        }
+
+        async function histPickSuppPhoto(event) {
+            const file = event.target.files[0];
+            if (!file || !histState.record) return;
+            const preview = document.getElementById('histSuppPhotoPreview');
+            if (preview) preview.style.display = 'flex';
+            histSuppPhotoState.id = null;
+            histSuppPhotoState.url = null;
+            histSuppPhotoState.uploading = true;
+            try {
+                const uploaded = await uploadPhotoForDate(file, 'histSuppPhotoSt', 'histSuppPhotoThumb');
+                histSuppPhotoState.id = uploaded.id;
+                histSuppPhotoState.url = uploaded.url;
+                document.getElementById('histSuppPhotoSt').textContent = '已添加到补充';
+                await loadHistPhotos();
+            } catch (e) {
+                document.getElementById('histSuppPhotoSt').textContent = '上传失败：' + e.message;
+            } finally {
+                histSuppPhotoState.uploading = false;
+                event.target.value = '';
+            }
+        }
+
+        function histClearSuppPhoto() {
+            histSuppPhotoState.id = null;
+            histSuppPhotoState.url = null;
+            histSuppPhotoState.uploading = false;
+            const preview = document.getElementById('histSuppPhotoPreview');
+            const input = document.getElementById('histSuppPhotoInput');
+            if (preview) preview.style.display = 'none';
+            if (input) input.value = '';
         }
 
         async function histSaveBody() {
@@ -681,16 +809,30 @@
             const convId = histState.convId; const r = histState.record;
             if (!convId || !r) return;
             const input = document.getElementById('histSuppInput');
-            const content = input.value.trim(); if (!content) return;
+            const content = input.value.trim();
+            if (!content && !histSuppPhotoState.url) return;
+            if (histSuppPhotoState.uploading) {
+                appendMsg('histSuppMsgs', 'system', '照片还在上传中，请稍等');
+                return;
+            }
             const btn = document.getElementById('histSuppSendBtn');
             btn.disabled = true; btn.textContent = '…'; input.disabled = true;
-            appendMsg('histSuppMsgs', 'user', content); input.value = '';
+            const imageUrl = histSuppPhotoState.url;
+            appendMsg('histSuppMsgs', 'user', content || '（图片补充）', imageUrl);
+            input.value = '';
             try {
                 const resp = await apiFetch('/conversations/' + convId + '/messages', {
-                    method: 'POST', body: JSON.stringify({ content_type: 'text', content, is_supplement: true })
+                    method: 'POST',
+                    body: JSON.stringify({
+                        content_type: 'text',
+                        content: content || '（图片补充）',
+                        image_url: imageUrl,
+                        is_supplement: true
+                    })
                 });
                 appendMsg('histSuppMsgs', 'ai', resp.ai_message.content);
                 document.getElementById('histSuppSaveRow').style.display = 'block';
+                histClearSuppPhoto();
             } catch (e) { appendMsg('histSuppMsgs', 'system', '发送失败：' + e.message); }
             finally { btn.disabled=false; btn.textContent='发送'; input.disabled=false; input.focus(); }
         }
@@ -974,14 +1116,24 @@
         // ══════════════════════════════════════════════════════
         //  工具函数
         // ══════════════════════════════════════════════════════
-        function appendMsg(containerId, role, content) {
+        function appendMsg(containerId, role, content, imageUrl) {
             const c = document.getElementById(containerId); if (!c) return;
             const d = document.createElement('div');
             d.className = 'sp-msg' + (role === 'user' ? ' user' : '');
             const icon = role === 'user' ? '👤' : role === 'ai' ? '🤖' : '⚠️';
-            d.innerHTML = `<div class="sp-msg-ico">${icon}</div><div class="sp-msg-bubble">${escapeHtml(content)}</div>`;
+            const imgHtml = imageUrl
+                ? `<div style="max-width:180px;border-radius:10px;overflow:hidden;margin-bottom:6px">
+                    <img src="${escapeAttribute(imageUrl)}" alt="补充照片" style="width:100%;display:block"
+                        onclick="window.open(this.src,'_blank')">
+                   </div>`
+                : '';
+            d.innerHTML = `<div class="sp-msg-ico">${icon}</div><div class="sp-msg-bubble">${imgHtml}${escapeHtml(content)}</div>`;
             c.appendChild(d);
             c.scrollTop = c.scrollHeight;
+        }
+
+        function escapeAttribute(text) {
+            return escapeHtml(text || '').replace(/'/g, '&#39;');
         }
 
         function setSt(id, text, type) {

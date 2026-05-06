@@ -49,6 +49,7 @@ class MediaService:
         user_id: uuid.UUID,
         file: UploadFile,
         conversation_id: Optional[uuid.UUID] = None,
+        record_date: Optional[date] = None,
     ) -> ImageUploadResponse:
         """上传图片：校验 → 保存本地 → 查找当日记录 → 写数据库"""
 
@@ -70,36 +71,32 @@ class MediaService:
             pass
 
         # 生成存储路径
-        today = date.today()
+        target_date = record_date or date.today()
         mime = file.content_type or "image/jpeg"
         ext = mime.split("/")[-1].replace("jpeg", "jpg")
         file_name = f"{uuid.uuid4().hex}.{ext}"
-        user_dir = os.path.join(UPLOADS_DIR, str(user_id), str(today))
+        user_dir = os.path.join(UPLOADS_DIR, str(user_id), str(target_date))
         try:
             os.makedirs(user_dir, exist_ok=True)
         except OSError:
             pass
         file_path = os.path.join(user_dir, file_name)
 
-        # Vercel 环境下 /tmp 不对外提供 HTTP，暂存后 url 留空（后续接入云存储）
         try:
             with open(file_path, "wb") as f:
                 f.write(content)
         except OSError:
             logger.warning("[MediaService] 无法写入文件系统（Vercel 只读），图片不持久化")
 
-        storage_key = f"{user_id}/{today}/{file_name}"
-        if _IS_VERCEL:
-            url = ""  # Vercel 无持久化本地存储，URL 暂为空（可接入 S3/Cloudinary）
-        else:
-            url = f"/uploads/{storage_key}"
+        storage_key = f"{user_id}/{target_date}/{file_name}"
+        url = MediaService._public_upload_url(storage_key)
 
-        # 查找当天的 DailyRecord（可选绑定）
+        # 查找归属日期的 DailyRecord（可选绑定）
         daily_record_id = None
         try:
             stmt = select(DailyRecord).where(
                 DailyRecord.user_id == user_id,
-                DailyRecord.record_date == today,
+                DailyRecord.record_date == target_date,
                 DailyRecord.deleted_at.is_(None),
             )
             rec = (await session.execute(stmt)).scalar_one_or_none()
@@ -111,7 +108,7 @@ class MediaService:
         img = DailyRecordImage(
             user_id=user_id,
             daily_record_id=daily_record_id,
-            record_date=today,
+            record_date=target_date,
             storage_key=storage_key,
             url=url,
             original_filename=file.filename,
@@ -251,7 +248,7 @@ class MediaService:
         return ImageItem(
             id=img.id,
             record_date=img.record_date,
-            url=img.url,
+            url=img.url or MediaService._public_upload_url(img.storage_key),
             thumbnail_url=img.thumbnail_url,
             ai_caption=img.ai_caption,
             ai_tags=ai_tags,
@@ -260,6 +257,12 @@ class MediaService:
             height=img.height,
             created_at=img.created_at,
         )
+
+    @staticmethod
+    def _public_upload_url(storage_key: str | None) -> str:
+        if not storage_key:
+            return ""
+        return f"/uploads/{storage_key.lstrip('/')}"
 
     # ── 异步后台处理 ─────────────────────────────────────────────
 

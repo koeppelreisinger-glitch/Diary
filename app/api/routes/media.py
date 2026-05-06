@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional
 
 from fastapi import APIRouter, File, UploadFile, Query, Path
@@ -22,6 +22,7 @@ async def upload_image(
     current_user: CurrentUser,
     file: UploadFile = File(...),
     conversation_id: Optional[uuid.UUID] = Query(None, description="关联对话 ID（可选）"),
+    record_date: Optional[date] = Query(None, description="图片归属日期 YYYY-MM-DD（可选，默认今天）"),
 ):
     """上传图片，返回 URL 和 ID，发消息时携带 image_url 即可"""
     result = await MediaService.upload_image(
@@ -29,6 +30,7 @@ async def upload_image(
         user_id=current_user.id,
         file=file,
         conversation_id=conversation_id,
+        record_date=record_date,
     )
     return ApiResponse(data=result)
 

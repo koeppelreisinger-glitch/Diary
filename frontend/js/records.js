@@ -271,7 +271,13 @@ async function loadPhotoToday() {
         }
         if (row) row.style.display = '';
         container.style.display = '';
-        container.innerHTML = data.items.map(renderPhotoDateGroup).join('');
+        const html = data.items.map(renderPhotoDateGroup).filter(Boolean).join('');
+        if (!html) {
+            if (row) row.style.display = 'none';
+            container.style.display = 'none';
+            return;
+        }
+        container.innerHTML = html;
     } catch (e) {
         if (row) row.style.display = 'none';
         container.style.display = 'none';
@@ -294,7 +300,11 @@ async function loadPhotoStream() {
             return;
         }
         if (row) row.style.display = '';
-        container.innerHTML = data.items.map(renderPhotoDateGroup).join('');
+        const html = data.items.map(renderPhotoDateGroup).filter(Boolean).join('');
+        container.innerHTML = html || `
+            <div class="memory-empty memory-empty-compact">
+                图片记录还没有可访问地址，请重新上传一张试试。
+            </div>`;
     } catch (e) {
         container.innerHTML = `<div class="memory-empty memory-empty-compact">${escapeHtml(e.message)}</div>`;
     }
@@ -303,7 +313,8 @@ async function loadPhotoStream() {
 function renderPhotoDateGroup(group) {
     const d = new Date(group.record_date + 'T00:00:00');
     const dateLabel = `${d.getMonth() + 1}月${d.getDate()}日`;
-    const images = (group.images || []).slice(0, 6);
+    const images = (group.images || []).filter(img => img && (img.thumbnail_url || img.url)).slice(0, 6);
+    if (!images.length) return '';
     return `
         <section class="memory-photo-group">
             <div class="memory-photo-date">${dateLabel}</div>
