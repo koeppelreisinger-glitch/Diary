@@ -239,8 +239,8 @@ class MediaService:
         return ImageItem(
             id=img.id,
             record_date=img.record_date,
-            url=img.url or MediaService._public_upload_url(img.storage_key),
-            thumbnail_url=img.thumbnail_url,
+            url=MediaService._display_image_url(img.url, img.storage_key),
+            thumbnail_url=MediaService._display_thumbnail_url(img.thumbnail_url),
             ai_caption=img.ai_caption,
             ai_tags=ai_tags,
             dominant_colors=ai_colors,
@@ -254,6 +254,20 @@ class MediaService:
         if not storage_key:
             return ""
         return f"/uploads/{storage_key.lstrip('/')}"
+
+    @staticmethod
+    def _display_image_url(url: str | None, storage_key: str | None = None) -> str:
+        if url:
+            return url
+        return MediaService._public_upload_url(storage_key)
+
+    @staticmethod
+    def _display_thumbnail_url(url: str | None) -> str | None:
+        if not url:
+            return None
+        if MediaService._use_vercel_blob() and url.startswith("/uploads/thumbnails/"):
+            return None
+        return url
 
     @staticmethod
     def _use_vercel_blob() -> bool:
@@ -270,6 +284,13 @@ class MediaService:
                 storage_key=storage_key,
                 content=content,
                 content_type=content_type,
+            )
+
+        if os.environ.get("VERCEL"):
+            raise ErrorResponseAPIException(
+                500,
+                "线上图片存储未配置：请在 Vercel 设置 BLOB_READ_WRITE_TOKEN",
+                50005,
             )
 
         MediaService._save_to_local_uploads(storage_key, content)
